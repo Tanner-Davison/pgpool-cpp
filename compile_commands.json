@@ -1,0 +1,8 @@
+[
+{
+  "directory": "F:/Projects/cpp/cpp-postgress/build",
+  "command": "C:\\msys64\\mingw64\\bin\\c++.exe -DPQXX_SHARED @CMakeFiles/cpp-postgress.dir/includes_CXX.rsp -std=gnu++17 -o CMakeFiles\\cpp-postgress.dir\\src\\main.cpp.obj -c F:\\Projects\\cpp\\cpp-postgress\\src\\main.cpp",
+  "file": "F:/Projects/cpp/cpp-postgress/src/main.cpp",
+  "output": "CMakeFiles/cpp-postgress.dir/src/main.cpp.obj"
+}
+]

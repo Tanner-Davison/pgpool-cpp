@@ -1,0 +1,13 @@
+build/
+.cache/
+compile_commands.json
+F:/tools/vcpkg/
+/tools/vcpkg/
+*.exe
+*.dll
+*.a
+*.lib
+build/
+.cache/
+F:/tools/
+/tools/
