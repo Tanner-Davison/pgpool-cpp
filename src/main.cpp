@@ -4,8 +4,8 @@
 int main() {
   try {
     // Connect to database
-    pqxx::connection conn(
-        "dbname=postgres user=postgres password=Luliann465$ host=localhost");
+    pqxx::connection conn("dbname=postgres user=postgres password={PASSWORD "
+                          "HERE} host=localhost");
 
     if (conn.is_open()) {
       std::cout << "Connected to database: " << conn.dbname() << std::endl;
