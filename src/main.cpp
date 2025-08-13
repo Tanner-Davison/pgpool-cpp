@@ -1,12 +1,13 @@
-#include <iostream>
 #include <pqxx/pqxx>
+
+#include <iostream>
+#include <string>
 
 int main() {
   try {
     // Connect to database
-    pqxx::connection conn("dbname=postgres user=postgres password={PASSWORD "
-                          "HERE} host=localhost");
-
+    pqxx::connection conn(
+        "host=localhost port=5432 dbname=tanner user=tanner password=");
     if (conn.is_open()) {
       std::cout << "Connected to database: " << conn.dbname() << std::endl;
     }
@@ -23,7 +24,6 @@ int main() {
 
     // Commit transaction
     txn.commit();
-
   } catch (const std::exception &e) {
     std::cerr << "Error: " << e.what() << std::endl;
     return 1;
