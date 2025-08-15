@@ -3,3 +3,8 @@ Index:
   StandardLibrary: No
 CompileFlags:
   CompilationDatabase: build
+CompilationDatabase: build/
+  Add:
+    - "-I${workspaceFolder}/include"
+    - "-I${workspaceFolder}/src"
+
