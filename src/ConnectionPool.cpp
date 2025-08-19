@@ -1,28 +1,57 @@
 #include "ConnectionPool.hpp"
-#include <iostream>
-#include <memory>
-#include <stdexcept>
+#include <chrono>
 
-ConnectionPool::ConnectionPool(const std::string& ppassword) : password(ppassword), conn(connection_string + password) {
-   try {
-      txn = std::make_unique<pqxx::work>(conn);
-      if (!conn.is_open()) {
-         throw std::runtime_error("Failed to connect to database");
-      }
-      r = std::make_shared<pqxx::result>(txn->exec("SELECT version()"));
-      print_connection();
-      txn->commit();
-
-   } catch (const pqxx::sql_error& e) {
-      std::cerr << "ERROR: " << e.what() << std::endl;
-      std::cerr << "Query: " << e.query() << std::endl;
-      throw;
-   } catch (std::exception& e) {
-      std::cerr << "Error: " << e.what() << std::endl;
-      throw;
+ConnectionPool::ConnectionPool(const std::string& conn_str, size_t min_conns, size_t max_conns)
+    : connection_string(conn_str), min_connections(min_conns), max_connections(max_conns) {
+   for (size_t i = 0; i < min_conns; ++i) {
+      createConnection();
+      std::cout << "Connection pool initialized with " << min_connections << " connections" << std::endl;
    }
 }
-void ConnectionPool::print_connection() const {
-   std::cout << "connected to: " << conn.dbname() << "\n";
-   std::cout << "version: " << (*r)[0][0].as<std::string>() << std::endl;
+
+void ConnectionPool::createConnection() {
+   auto conn = std::make_unique<pqxx::connection>(connection_string);
+   connections.push_back({std::move(conn), std::chrono::steady_clock::now(), false});
+   available_indices.push(connections.size() - 1); // tracks count of Pooled connections
+}
+
+// ConnectionHandle consturctor
+ConnectionPool::ConnectionHandle::ConnectionHandle(pqxx::connection* c, ConnectionPool* p, size_t idx)
+    : conn(c), pool(p), index(idx) {}
+
+// ConnectionHandle  move constructor
+ConnectionPool::ConnectionHandle::ConnectionHandle(ConnectionHandle&& other) noexcept
+    : conn(other.conn), pool(other.pool), index(other.index) {
+   other.conn = nullptr;
+   other.pool = nullptr;
+};
+ConnectionPool::ConnectionHandle::~ConnectionHandle() {
+   if (pool && conn) {
+      pool->returnConnection(index);
+   }
+}
+
+ConnectionPool::ConnectionHandle ConnectionPool::getConnection() { // Returns a ConnectionHandle
+   std::unique_lock<std::mutex> lock(pool_mutex);
+
+   // wait for availbalbe connections or create a new one
+   pool_cv.wait(lock, [this] { return !available_indices.empty() || connections.size() < max_connections; });
+   if (available_indices.empty() && connections.size() < max_connections) {
+      createConnection();
+   }
+   size_t index = available_indices.front(); // take a free indice from available_indices
+   available_indices.pop();                  // remove from queue
+   connections[index].in_use    = true;
+   connections[index].last_used = std::chrono::steady_clock::now();
+
+   return ConnectionHandle(connections[index].conn.get(), this, index);
+}
+
+size_t ConnectionPool::activeConnections() const {
+   std::lock_guard<std::mutex> lock(pool_mutex);
+   return connections.size() - available_indices.size();
+}
+size_t ConnectionPool::totalConnections() const {
+   std::lock_guard<std::mutex> lock(pool_mutex);
+   return connections.size();
 }

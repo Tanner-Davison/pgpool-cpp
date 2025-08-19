@@ -2,13 +2,18 @@
 #include "ConnectionPool.hpp"
 #include <iostream>
 #include <string>
-
+// Wr450f
 int main() {
-   std::string password;
-   getline(std::cin, password);
+   std::string connection_string = "host=localhost port=5432 dbname=tanner user=tanner password=";
 
-   if (!password.empty()) {
-      ConnectionPool tanner(password);
+   ConnectionPool pool(connection_string);
+   {
+      auto conn = pool.getConnection();
+      std::cout << "active connections: " << std::endl;
+      std::cout << pool.activeConnections() << std::endl;
+
+      std::cout << "total Connections: " << std::endl;
+      std::cout << pool.totalConnections() << std::endl;
    }
 
    return 0;
