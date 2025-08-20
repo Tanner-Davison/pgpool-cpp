@@ -1,0 +1,1131 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Connection Pool Pattern Visualization</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        padding: 20px;
+        color: #333;
+      }
+
+      .container {
+        max-width: 1400px;
+        margin: 0 auto;
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: 20px;
+        padding: 30px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      }
+
+      h1 {
+        text-align: center;
+        color: #4a5568;
+        margin-bottom: 10px;
+        font-size: 2.5em;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+      }
+
+      .subtitle {
+        text-align: center;
+        color: #718096;
+        margin-bottom: 30px;
+        font-size: 1.2em;
+      }
+
+      .main-layout {
+        display: grid;
+        grid-template-columns: 1fr 2fr 1fr;
+        gap: 30px;
+        margin-bottom: 30px;
+      }
+
+      .section {
+        background: white;
+        border-radius: 15px;
+        padding: 20px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        position: relative;
+        overflow: hidden;
+      }
+
+      .section::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, #667eea, #764ba2);
+      }
+
+      .section-title {
+        font-size: 1.3em;
+        color: #4a5568;
+        margin-bottom: 15px;
+        font-weight: 600;
+      }
+
+      .clients {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .client {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+        padding: 12px;
+        border-radius: 10px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .client::after {
+        content: "→";
+        position: absolute;
+        right: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 1.5em;
+        opacity: 0;
+        transition: all 0.3s ease;
+      }
+
+      .client:hover {
+        transform: translateX(5px);
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+      }
+
+      .client:hover::after {
+        opacity: 1;
+        right: 10px;
+      }
+
+      .pool {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        gap: 15px;
+      }
+
+      .connection {
+        background: #f7fafc;
+        border: 3px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 15px;
+        text-align: center;
+        transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        position: relative;
+        cursor: default;
+      }
+
+      .connection.available {
+        background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%);
+        border-color: #4fd1c5;
+        transform: scale(1.05);
+        box-shadow: 0 5px 15px rgba(79, 209, 197, 0.3);
+      }
+
+      .connection.in-use {
+        background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+        border-color: #f56565;
+        animation: pulse 2s infinite;
+      }
+
+      @keyframes pulse {
+        0%,
+        100% {
+          transform: scale(1);
+        }
+        50% {
+          transform: scale(1.05);
+        }
+      }
+
+      .connection-icon {
+        font-size: 2em;
+        margin-bottom: 5px;
+      }
+
+      .connection-label {
+        font-size: 0.9em;
+        color: #4a5568;
+        font-weight: 600;
+      }
+
+      .connection-status {
+        font-size: 0.8em;
+        margin-top: 5px;
+        color: #718096;
+      }
+
+      .handle {
+        background: linear-gradient(135deg, #ffd89b 0%, #19547b 100%);
+        color: white;
+        padding: 15px;
+        border-radius: 10px;
+        margin-bottom: 10px;
+        animation: slideIn 0.5s ease-out;
+        position: relative;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      }
+
+      @keyframes slideIn {
+        from {
+          opacity: 0;
+          transform: translateY(-20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .handle-title {
+        font-weight: bold;
+        margin-bottom: 5px;
+      }
+
+      .handle-info {
+        font-size: 0.9em;
+        opacity: 0.9;
+      }
+
+      .controls {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+      }
+
+      button {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 1em;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      }
+
+      button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+      }
+
+      button:active {
+        transform: translateY(0);
+      }
+
+      button:disabled {
+        background: #cbd5e0;
+        cursor: not-allowed;
+        transform: none;
+      }
+
+      .stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 15px;
+        margin-top: 20px;
+      }
+
+      .stat-card {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        color: white;
+        padding: 15px;
+        border-radius: 10px;
+        text-align: center;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      }
+
+      .stat-value {
+        font-size: 2em;
+        font-weight: bold;
+        margin-bottom: 5px;
+      }
+
+      .stat-label {
+        font-size: 0.9em;
+        opacity: 0.9;
+      }
+
+      .flow-diagram {
+        background: white;
+        border-radius: 15px;
+        padding: 20px;
+        margin-top: 30px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      }
+
+      .flow-steps {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 20px;
+      }
+
+      .flow-step {
+        flex: 1;
+        min-width: 150px;
+        text-align: center;
+        padding: 15px;
+        background: #f7fafc;
+        border-radius: 10px;
+        position: relative;
+        transition: all 0.3s ease;
+      }
+
+      .flow-step:hover {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+      }
+
+      .flow-step:not(:last-child)::after {
+        content: "→";
+        position: absolute;
+        right: -25px;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 1.5em;
+        color: #cbd5e0;
+      }
+
+      .step-number {
+        background: #667eea;
+        color: white;
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 10px;
+        font-weight: bold;
+      }
+
+      .flow-step:hover .step-number {
+        background: white;
+        color: #667eea;
+      }
+
+      .comparison-section {
+        background: white;
+        border-radius: 15px;
+        padding: 20px;
+        margin-top: 30px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      }
+
+      .comparison-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 30px;
+        margin-top: 20px;
+      }
+
+      .comparison-panel {
+        background: #f7fafc;
+        border-radius: 12px;
+        padding: 20px;
+        border: 2px solid #e2e8f0;
+      }
+
+      .comparison-title {
+        color: #4a5568;
+        margin-bottom: 20px;
+        font-size: 1.2em;
+        text-align: center;
+      }
+
+      .timeline-container {
+        background: white;
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 15px;
+      }
+
+      .timeline-bar {
+        display: flex;
+        align-items: center;
+        height: 40px;
+        background: #f1f5f9;
+        border-radius: 4px;
+        margin-bottom: 10px;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .timeline-label {
+        font-weight: 600;
+        color: #4a5568;
+        margin-bottom: 5px;
+        font-size: 0.9em;
+      }
+
+      .mutex-time {
+        background: #e53e3e;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        font-size: 0.7em;
+        min-width: 20px;
+        animation: mutexFlash 2s infinite;
+      }
+
+      @keyframes mutexFlash {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.7;
+        }
+      }
+
+      .work-time {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        color: white;
+        font-size: 0.85em;
+        padding: 0 10px;
+        font-weight: 600;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .parallel-1 {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        animation: slideInParallel 1s ease-out;
+      }
+
+      .parallel-2 {
+        background: linear-gradient(135deg, #f093fb, #f5576c);
+        animation: slideInParallel 1s ease-out 0.1s both;
+      }
+
+      .parallel-3 {
+        background: linear-gradient(135deg, #4facfe, #00f2fe);
+        animation: slideInParallel 1s ease-out 0.2s both;
+      }
+
+      .sequential-1 {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        animation: slideInSequential 0.5s ease-out;
+      }
+
+      .sequential-2 {
+        background: linear-gradient(135deg, #f093fb, #f5576c);
+        animation: slideInSequential 0.5s ease-out 0.5s both;
+      }
+
+      .sequential-3 {
+        background: linear-gradient(135deg, #4facfe, #00f2fe);
+        animation: slideInSequential 0.5s ease-out 1s both;
+      }
+
+      @keyframes slideInParallel {
+        from {
+          width: 0;
+          opacity: 0;
+        }
+        to {
+          width: inherit;
+          opacity: 1;
+        }
+      }
+
+      @keyframes slideInSequential {
+        from {
+          transform: translateX(-100%);
+          opacity: 0;
+        }
+        to {
+          transform: translateX(0);
+          opacity: 1;
+        }
+      }
+
+      .idle-time {
+        background: repeating-linear-gradient(
+          45deg,
+          #e2e8f0,
+          #e2e8f0 10px,
+          #cbd5e0 10px,
+          #cbd5e0 20px
+        );
+        color: #718096;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        width: 100%;
+        font-style: italic;
+        font-size: 0.9em;
+      }
+
+      .spacer {
+        height: 100%;
+      }
+
+      .timeline-summary {
+        background: #f7fafc;
+        border-radius: 8px;
+        padding: 15px;
+        margin-top: 10px;
+        border-left: 4px solid #667eea;
+      }
+
+      .benefit {
+        color: #48bb78;
+        font-size: 0.9em;
+      }
+
+      .drawback {
+        color: #f56565;
+        font-size: 0.9em;
+      }
+
+      .hot-dog-analogy {
+        background: linear-gradient(135deg, #ffd89b 0%, #19547b 100%);
+        color: white;
+        border-radius: 12px;
+        padding: 20px;
+        margin-top: 20px;
+      }
+
+      .hot-dog-analogy h3 {
+        margin-bottom: 15px;
+        text-align: center;
+      }
+
+      .analogy-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+      }
+
+      .analogy-item {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        padding: 15px;
+        text-align: center;
+      }
+
+      .analogy-icon {
+        font-size: 2em;
+        margin-bottom: 10px;
+      }
+
+      .single-thread-demo {
+        background: white;
+        border-radius: 15px;
+        padding: 20px;
+        margin-top: 30px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      }
+
+      .single-thread-controls {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+      }
+
+      .queue-section {
+        background: #f7fafc;
+        border-radius: 12px;
+        padding: 15px;
+        margin-bottom: 20px;
+        min-height: 100px;
+      }
+
+      .queue-title {
+        font-weight: 600;
+        color: #4a5568;
+        margin-bottom: 10px;
+        font-size: 1.1em;
+      }
+
+      .query-queue {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        min-height: 60px;
+        align-items: center;
+      }
+
+      .query-item {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+        padding: 10px 15px;
+        border-radius: 8px;
+        font-size: 0.9em;
+        animation: queueAdd 0.3s ease-out;
+        position: relative;
+        cursor: default;
+      }
+
+      @keyframes queueAdd {
+        from {
+          opacity: 0;
+          transform: scale(0.8);
+        }
+        to {
+          opacity: 1;
+          transform: scale(1);
+        }
+      }
+
+      .query-item.executing {
+        background: linear-gradient(135deg, #f093fb, #f5576c);
+        animation: executing 1s infinite;
+      }
+
+      @keyframes executing {
+        0%,
+        100% {
+          transform: scale(1);
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        50% {
+          transform: scale(1.05);
+          box-shadow: 0 5px 15px rgba(240, 147, 251, 0.4);
+        }
+      }
+
+      .single-thread-pool {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+        gap: 10px;
+        margin-bottom: 20px;
+      }
+
+      .single-connection {
+        background: #f7fafc;
+        border: 3px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 12px;
+        text-align: center;
+        transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        font-size: 0.85em;
+      }
+
+      .single-connection.available {
+        background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%);
+        border-color: #4fd1c5;
+      }
+
+      .single-connection.in-use {
+        background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+        border-color: #f56565;
+        animation: pulse 2s infinite;
+      }
+
+      .execution-status {
+        background: #1a202c;
+        color: #68d391;
+        font-family: "Courier New", monospace;
+        padding: 15px;
+        border-radius: 8px;
+        min-height: 80px;
+        font-size: 0.9em;
+        line-height: 1.6;
+      }
+
+      .status-line {
+        margin-bottom: 5px;
+      }
+
+      .thread-indicator {
+        background: linear-gradient(135deg, #ffd89b 0%, #19547b 100%);
+        color: white;
+        padding: 15px;
+        border-radius: 10px;
+        text-align: center;
+        margin-bottom: 20px;
+      }
+
+      .thread-indicator h3 {
+        margin: 0 0 5px 0;
+      }
+
+      .thread-indicator p {
+        margin: 0;
+        font-size: 0.9em;
+        opacity: 0.9;
+      }
+
+      @media (max-width: 1024px) {
+        .main-layout {
+          grid-template-columns: 1fr;
+        }
+        .comparison-grid {
+          grid-template-columns: 1fr;
+        }
+        .analogy-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>🔌 Connection Pool Pattern</h1>
+      <p class="subtitle">
+        Interactive Visualization of Database Connection Management
+      </p>
+
+      <div class="controls">
+        <button onclick="requestConnection()">Request Connection</button>
+        <button onclick="releaseRandomConnection()">
+          Release Random Connection
+        </button>
+        <button onclick="addConnection()">Add Connection to Pool</button>
+        <button onclick="removeConnection()">Remove Connection</button>
+        <button onclick="simulateLoad()">Simulate Load</button>
+        <button onclick="reset()">Reset Pool</button>
+      </div>
+
+      <div class="main-layout">
+        <div class="section">
+          <h2 class="section-title">👥 Client Threads</h2>
+          <div class="clients" id="clients">
+            <div class="client" onclick="requestConnection()">
+              Client Thread 1
+            </div>
+            <div class="client" onclick="requestConnection()">
+              Client Thread 2
+            </div>
+            <div class="client" onclick="requestConnection()">
+              Client Thread 3
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <h2 class="section-title">🏊 Connection Pool</h2>
+          <div class="pool" id="pool"></div>
+          <div class="stats">
+            <div class="stat-card">
+              <div class="stat-value" id="totalConn">5</div>
+              <div class="stat-label">Total Connections</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value" id="activeConn">0</div>
+              <div class="stat-label">Active Connections</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value" id="availableConn">5</div>
+              <div class="stat-label">Available</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <h2 class="section-title">🎯 Connection Handles</h2>
+          <div id="handles"></div>
+        </div>
+      </div>
+
+      <div class="flow-diagram">
+        <h2 class="section-title">📋 Pattern Flow</h2>
+        <div class="flow-steps">
+          <div class="flow-step">
+            <div class="step-number">1</div>
+            <strong>Request</strong><br />
+            Client calls getConnection()
+          </div>
+          <div class="flow-step">
+            <div class="step-number">2</div>
+            <strong>Lock & Check</strong><br />
+            Mutex locks pool, checks availability
+          </div>
+          <div class="flow-step">
+            <div class="step-number">3</div>
+            <strong>Acquire</strong><br />
+            Mark connection as in_use
+          </div>
+          <div class="flow-step">
+            <div class="step-number">4</div>
+            <strong>Handle</strong><br />
+            Return ConnectionHandle (RAII)
+          </div>
+          <div class="flow-step">
+            <div class="step-number">5</div>
+            <strong>Use</strong><br />
+            Client uses connection via handle
+          </div>
+          <div class="flow-step">
+            <div class="step-number">6</div>
+            <strong>Release</strong><br />
+            ~ConnectionHandle returns to pool
+          </div>
+        </div>
+      </div>
+
+      <div class="comparison-section">
+        <h2 class="section-title">
+          🔄 Multi-Threaded vs Single-Threaded Execution
+        </h2>
+        <div class="comparison-grid">
+          <div class="comparison-panel">
+            <h3 class="comparison-title">🚀 Multi-Threaded (Parallel)</h3>
+            <div class="timeline-container">
+              <div class="timeline-label">Thread 1:</div>
+              <div class="timeline-bar">
+                <div
+                  class="mutex-time"
+                  style="width: 2%"
+                  title="Get Connection"
+                ></div>
+                <div class="work-time parallel-1" style="width: 60%">
+                  Query: SELECT * FROM orders (50ms)
+                </div>
+              </div>
+              <div class="timeline-label">Thread 2:</div>
+              <div class="timeline-bar">
+                <div class="spacer" style="width: 2%"></div>
+                <div
+                  class="mutex-time"
+                  style="width: 2%"
+                  title="Get Connection"
+                ></div>
+                <div class="work-time parallel-2" style="width: 45%">
+                  Query: UPDATE inventory (30ms)
+                </div>
+              </div>
+              <div class="timeline-label">Thread 3:</div>
+              <div class="timeline-bar">
+                <div class="spacer" style="width: 4%"></div>
+                <div
+                  class="mutex-time"
+                  style="width: 2%"
+                  title="Get Connection"
+                ></div>
+                <div class="work-time parallel-3" style="width: 50%">
+                  Query: INSERT INTO logs (40ms)
+                </div>
+              </div>
+              <div class="timeline-summary">
+                <strong>Total Time: ~50ms</strong> (limited by slowest query)<br />
+                <span class="benefit">✅ All queries run simultaneously</span
+                ><br />
+                <span class="benefit">✅ Full CPU/Database utilization</span
+                ><br />
+                <span class="benefit"
+                  >✅ Pool pattern provides maximum benefit</span
+                >
+              </div>
+            </div>
+          </div>
+
+          <div class="comparison-panel">
+            <h3 class="comparison-title">🌭 Single-Threaded (Sequential)</h3>
+            <div class="timeline-container">
+              <div class="timeline-label">Thread 1:</div>
+              <div class="timeline-bar">
+                <div
+                  class="mutex-time"
+                  style="width: 1%"
+                  title="Get Conn 1"
+                ></div>
+                <div class="work-time sequential-1" style="width: 30%">
+                  SELECT * FROM orders (50ms)
+                </div>
+                <div
+                  class="mutex-time"
+                  style="width: 1%"
+                  title="Get Conn 2"
+                ></div>
+                <div class="work-time sequential-2" style="width: 20%">
+                  UPDATE inventory (30ms)
+                </div>
+                <div
+                  class="mutex-time"
+                  style="width: 1%"
+                  title="Get Conn 3"
+                ></div>
+                <div class="work-time sequential-3" style="width: 25%">
+                  INSERT INTO logs (40ms)
+                </div>
+              </div>
+              <div class="timeline-label">Thread 2:</div>
+              <div class="timeline-bar">
+                <div class="idle-time">Not Used (Single Thread Only)</div>
+              </div>
+              <div class="timeline-label">Thread 3:</div>
+              <div class="timeline-bar">
+                <div class="idle-time">Not Used (Single Thread Only)</div>
+              </div>
+              <div class="timeline-summary">
+                <strong>Total Time: 120ms</strong> (sum of all queries)<br />
+                <span class="drawback"
+                  >⚠️ Only one connection used at a time</span
+                ><br />
+                <span class="drawback">⚠️ Other connections sit idle</span
+                ><br />
+                <span class="drawback"
+                  >⚠️ Thread-safety overhead with no benefit</span
+                >
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="hot-dog-analogy">
+          <h3>🌭 The Hot Dog Stand Analogy</h3>
+          <div class="analogy-grid">
+            <div class="analogy-item">
+              <div class="analogy-icon">👥</div>
+              <strong>Multi-Threaded:</strong> 3 people, 3 hot dogs<br />
+              Everyone eats simultaneously<br />
+              Time = slowest eater
+            </div>
+            <div class="analogy-item">
+              <div class="analogy-icon">👤</div>
+              <strong>Single-Threaded:</strong> 1 person, 3 hot dogs<br />
+              Must eat one at a time<br />
+              Time = sum of all eating
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      class ConnectionPoolViz {
+        constructor() {
+          this.minConnections = 1;
+          this.maxConnections = 10;
+          this.connections = [];
+          this.handles = [];
+          this.nextHandleId = 1;
+
+          this.initPool();
+          this.render();
+        }
+
+        initPool() {
+          // Start with 5 connections
+          for (let i = 0; i < 5; i++) {
+            this.connections.push({
+              id: i,
+              inUse: false,
+              lastUsed: new Date(),
+            });
+          }
+        }
+
+        render() {
+          this.renderPool();
+          this.renderHandles();
+          this.updateStats();
+        }
+
+        renderPool() {
+          const poolEl = document.getElementById("pool");
+          poolEl.innerHTML = "";
+
+          this.connections.forEach((conn) => {
+            const connEl = document.createElement("div");
+            connEl.className = `connection ${conn.inUse ? "in-use" : "available"}`;
+            connEl.innerHTML = `
+                        <div class="connection-icon">${conn.inUse ? "🔒" : "🔓"}</div>
+                        <div class="connection-label">Conn #${conn.id}</div>
+                        <div class="connection-status">${conn.inUse ? "In Use" : "Available"}</div>
+                    `;
+            poolEl.appendChild(connEl);
+          });
+        }
+
+        renderHandles() {
+          const handlesEl = document.getElementById("handles");
+          handlesEl.innerHTML = "";
+
+          this.handles.forEach((handle) => {
+            const handleEl = document.createElement("div");
+            handleEl.className = "handle";
+            handleEl.innerHTML = `
+                        <div class="handle-title">Handle #${handle.id}</div>
+                        <div class="handle-info">→ Connection #${handle.connId}</div>
+                        <div class="handle-info">Thread: ${handle.thread}</div>
+                    `;
+            handlesEl.appendChild(handleEl);
+          });
+        }
+
+        updateStats() {
+          const total = this.connections.length;
+          const active = this.connections.filter((c) => c.inUse).length;
+          const available = total - active;
+
+          document.getElementById("totalConn").textContent = total;
+          document.getElementById("activeConn").textContent = active;
+          document.getElementById("availableConn").textContent = available;
+        }
+
+        requestConnection() {
+          const availableConn = this.connections.find((c) => !c.inUse);
+          if (availableConn) {
+            availableConn.inUse = true;
+            availableConn.lastUsed = new Date();
+
+            this.handles.push({
+              id: this.nextHandleId++,
+              connId: availableConn.id,
+              thread: `Thread ${Math.floor(Math.random() * 3) + 1}`,
+            });
+
+            this.render();
+            this.showNotification("✅ Connection acquired!");
+          } else {
+            this.showNotification(
+              "⏳ No connections available - would wait on condition variable",
+            );
+          }
+        }
+
+        releaseConnection(handleId) {
+          const handleIndex = this.handles.findIndex((h) => h.id === handleId);
+          if (handleIndex !== -1) {
+            const handle = this.handles[handleIndex];
+            const conn = this.connections.find((c) => c.id === handle.connId);
+            if (conn) {
+              conn.inUse = false;
+              conn.lastUsed = new Date();
+            }
+            this.handles.splice(handleIndex, 1);
+            this.render();
+            this.showNotification("🔄 Connection returned to pool");
+          }
+        }
+
+        releaseRandomConnection() {
+          if (this.handles.length > 0) {
+            const randomHandle =
+              this.handles[Math.floor(Math.random() * this.handles.length)];
+            this.releaseConnection(randomHandle.id);
+          } else {
+            this.showNotification("❌ No active connections to release");
+          }
+        }
+
+        addConnection() {
+          if (this.connections.length < this.maxConnections) {
+            const newId = Math.max(...this.connections.map((c) => c.id)) + 1;
+            this.connections.push({
+              id: newId,
+              inUse: false,
+              lastUsed: new Date(),
+            });
+            this.render();
+            this.showNotification("➕ New connection added to pool");
+          } else {
+            this.showNotification("⚠️ Maximum connections reached");
+          }
+        }
+
+        removeConnection() {
+          const availableConns = this.connections.filter((c) => !c.inUse);
+          if (availableConns.length > this.minConnections) {
+            const connToRemove = availableConns[availableConns.length - 1];
+            const index = this.connections.findIndex(
+              (c) => c.id === connToRemove.id,
+            );
+            this.connections.splice(index, 1);
+            this.render();
+            this.showNotification("➖ Connection removed from pool");
+          } else {
+            this.showNotification("⚠️ Cannot go below minimum connections");
+          }
+        }
+
+        simulateLoad() {
+          let requests = 0;
+          const interval = setInterval(() => {
+            if (requests < 8) {
+              this.requestConnection();
+              requests++;
+            } else {
+              clearInterval(interval);
+              setTimeout(() => {
+                // Release all after 2 seconds
+                while (this.handles.length > 0) {
+                  this.releaseRandomConnection();
+                }
+              }, 2000);
+            }
+          }, 300);
+
+          this.showNotification("🚀 Simulating heavy load...");
+        }
+
+        reset() {
+          this.connections = [];
+          this.handles = [];
+          this.nextHandleId = 1;
+          this.initPool();
+          this.render();
+          this.showNotification("🔄 Pool reset to initial state");
+        }
+
+        showNotification(message) {
+          // Simple console log for notifications
+          console.log(message);
+        }
+      }
+
+      // Initialize the visualization
+      const poolViz = new ConnectionPoolViz();
+
+      // Global functions for buttons
+      function requestConnection() {
+        poolViz.requestConnection();
+      }
+
+      function releaseRandomConnection() {
+        poolViz.releaseRandomConnection();
+      }
+
+      function addConnection() {
+        poolViz.addConnection();
+      }
+
+      function removeConnection() {
+        poolViz.removeConnection();
+      }
+
+      function simulateLoad() {
+        poolViz.simulateLoad();
+      }
+
+      function reset() {
+        poolViz.reset();
+      }
+    </script>
+  </body>
+</html>

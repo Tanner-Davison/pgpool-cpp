@@ -4,7 +4,7 @@
 #include <string>
 // Wr450f
 int main() {
-   std::string connection_string = "host=localhost port=5432 dbname=tanner user=tanner password=";
+   std::string connection_string = "host=localhost port=5432 dbname=tanner user=tanner ";
 
    ConnectionPool pool(connection_string);
    {

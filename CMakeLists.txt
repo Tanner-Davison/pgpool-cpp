@@ -10,7 +10,7 @@ else()
 endif()
 
 # Now declare project
-project(cpp-postgres)
+project(pgpool-cpp)
 
 # Set C++ standard AFTER project()
 set(CMAKE_CXX_STANDARD 17)
