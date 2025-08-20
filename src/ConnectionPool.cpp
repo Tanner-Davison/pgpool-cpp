@@ -47,11 +47,11 @@ ConnectionPool::ConnectionHandle ConnectionPool::getConnection() { // Returns a 
    return ConnectionHandle(connections[index].conn.get(), this, index);
 }
 
-size_t ConnectionPool::activeConnections() const {
+size_t ConnectionPool::activeConnections() { // using mutable do not const
    std::lock_guard<std::mutex> lock(pool_mutex);
    return connections.size() - available_indices.size();
 }
-size_t ConnectionPool::totalConnections() const {
+size_t ConnectionPool::totalConnections() { // using mutable do not const
    std::lock_guard<std::mutex> lock(pool_mutex);
    return connections.size();
 }

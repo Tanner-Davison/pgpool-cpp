@@ -8,7 +8,8 @@ int main() {
 
    ConnectionPool pool(connection_string);
    {
-      auto conn = pool.getConnection();
+      auto conn  = pool.getConnection();
+      auto conn2 = pool.getConnection();
       std::cout << "active connections: " << std::endl;
       std::cout << pool.activeConnections() << std::endl;
 

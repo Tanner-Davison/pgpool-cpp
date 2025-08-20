@@ -914,6 +914,67 @@
           </div>
         </div>
       </div>
+
+      <div class="single-thread-demo">
+        <h2 class="section-title">👤 Single-Threaded Mode (Interactive)</h2>
+
+        <div class="thread-indicator">
+          <h3>Single Thread Application</h3>
+          <p>
+            One thread must execute queries sequentially, even with multiple
+            connections available
+          </p>
+        </div>
+
+        <div class="single-thread-controls">
+          <button onclick="addQueryToQueue('SELECT')">Add SELECT Query</button>
+          <button onclick="addQueryToQueue('UPDATE')">Add UPDATE Query</button>
+          <button onclick="addQueryToQueue('INSERT')">Add INSERT Query</button>
+          <button onclick="executeNextQuery()">Execute Next Query</button>
+          <button onclick="executeAllQueries()">
+            Execute All Sequentially
+          </button>
+          <button onclick="clearSingleThreadDemo()">Clear Queue</button>
+        </div>
+
+        <div class="main-layout">
+          <div class="section">
+            <h3 class="section-title">📋 Query Queue</h3>
+            <div class="queue-section">
+              <div class="queue-title">Waiting Queries:</div>
+              <div class="query-queue" id="queryQueue"></div>
+            </div>
+          </div>
+
+          <div class="section">
+            <h3 class="section-title">🏊 Connection Pool (Single Thread)</h3>
+            <div class="single-thread-pool" id="singleThreadPool"></div>
+            <div class="stats">
+              <div class="stat-card">
+                <div class="stat-value" id="singleTotalConn">5</div>
+                <div class="stat-label">Total Connections</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-value" id="singleActiveConn">0</div>
+                <div class="stat-label">In Use (Max: 1)</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-value" id="queuedQueries">0</div>
+                <div class="stat-label">Queued Queries</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="section">
+            <h3 class="section-title">⚡ Execution Status</h3>
+            <div class="execution-status" id="executionStatus">
+              <div class="status-line">Status: Idle</div>
+              <div class="status-line">Current Query: None</div>
+              <div class="status-line">Time Elapsed: 0ms</div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <script>
@@ -1102,6 +1163,197 @@
       // Initialize the visualization
       const poolViz = new ConnectionPoolViz();
 
+      // Single-threaded demo
+      class SingleThreadDemo {
+        constructor() {
+          this.queryQueue = [];
+          this.connections = [];
+          this.isExecuting = false;
+          this.currentQuery = null;
+          this.queryId = 1;
+
+          this.initSingleThreadPool();
+          this.renderSingleThread();
+        }
+
+        initSingleThreadPool() {
+          for (let i = 0; i < 5; i++) {
+            this.connections.push({
+              id: i,
+              inUse: false,
+            });
+          }
+        }
+
+        renderSingleThread() {
+          this.renderSingleThreadPool();
+          this.renderQueryQueue();
+          this.updateSingleThreadStats();
+        }
+
+        renderSingleThreadPool() {
+          const poolEl = document.getElementById("singleThreadPool");
+          if (!poolEl) return;
+          poolEl.innerHTML = "";
+
+          this.connections.forEach((conn) => {
+            const connEl = document.createElement("div");
+            connEl.className = `single-connection ${conn.inUse ? "in-use" : "available"}`;
+            connEl.innerHTML = `
+                        <div style="font-size: 1.5em;">${conn.inUse ? "🔒" : "🔓"}</div>
+                        <div>Conn #${conn.id}</div>
+                        <div style="font-size: 0.8em; margin-top: 5px;">
+                            ${conn.inUse ? "In Use" : "Idle"}
+                        </div>
+                    `;
+            poolEl.appendChild(connEl);
+          });
+        }
+
+        renderQueryQueue() {
+          const queueEl = document.getElementById("queryQueue");
+          if (!queueEl) return;
+
+          if (this.queryQueue.length === 0) {
+            queueEl.innerHTML =
+              '<div style="color: #a0aec0; font-style: italic;">No queries in queue</div>';
+          } else {
+            queueEl.innerHTML = "";
+            this.queryQueue.forEach((query, index) => {
+              const queryEl = document.createElement("div");
+              queryEl.className = `query-item ${index === 0 && this.isExecuting ? "executing" : ""}`;
+              queryEl.innerHTML = `${query.type} Query #${query.id} (${query.duration}ms)`;
+              queueEl.appendChild(queryEl);
+            });
+          }
+        }
+
+        updateSingleThreadStats() {
+          const totalEl = document.getElementById("singleTotalConn");
+          const activeEl = document.getElementById("singleActiveConn");
+          const queuedEl = document.getElementById("queuedQueries");
+
+          if (totalEl) totalEl.textContent = this.connections.length;
+          if (activeEl)
+            activeEl.textContent = this.connections.filter(
+              (c) => c.inUse,
+            ).length;
+          if (queuedEl) queuedEl.textContent = this.queryQueue.length;
+        }
+
+        updateExecutionStatus(status, query = "None", elapsed = 0) {
+          const statusEl = document.getElementById("executionStatus");
+          if (statusEl) {
+            statusEl.innerHTML = `
+                        <div class="status-line">Status: ${status}</div>
+                        <div class="status-line">Current Query: ${query}</div>
+                        <div class="status-line">Time Elapsed: ${elapsed}ms</div>
+                    `;
+          }
+        }
+
+        addQueryToQueue(type) {
+          const durations = {
+            SELECT: 50,
+            UPDATE: 30,
+            INSERT: 40,
+          };
+
+          this.queryQueue.push({
+            id: this.queryId++,
+            type: type,
+            duration: durations[type] || 30,
+          });
+
+          this.renderSingleThread();
+          this.showNotification(`➕ ${type} query added to queue`);
+        }
+
+        async executeNextQuery() {
+          if (this.isExecuting) {
+            this.showNotification("⏳ Already executing a query!");
+            return;
+          }
+
+          if (this.queryQueue.length === 0) {
+            this.showNotification("❌ No queries in queue");
+            return;
+          }
+
+          this.isExecuting = true;
+          const query = this.queryQueue[0];
+
+          // Get a connection (always connection 0 for visualization)
+          this.connections[0].inUse = true;
+          this.renderSingleThreadPool();
+
+          this.updateExecutionStatus(
+            "Executing",
+            `${query.type} Query #${query.id}`,
+            0,
+          );
+          this.renderQueryQueue();
+
+          // Simulate query execution
+          let elapsed = 0;
+          const interval = setInterval(() => {
+            elapsed += 10;
+            this.updateExecutionStatus(
+              "Executing",
+              `${query.type} Query #${query.id}`,
+              elapsed,
+            );
+
+            if (elapsed >= query.duration * 10) {
+              clearInterval(interval);
+
+              // Release connection
+              this.connections[0].inUse = false;
+              this.queryQueue.shift();
+              this.isExecuting = false;
+
+              this.updateExecutionStatus("Idle", "None", 0);
+              this.renderSingleThread();
+              this.showNotification(
+                `✅ ${query.type} Query #${query.id} completed in ${query.duration}ms`,
+              );
+            }
+          }, 100);
+        }
+
+        async executeAllQueries() {
+          if (this.isExecuting) {
+            this.showNotification("⏳ Already executing!");
+            return;
+          }
+
+          const executeNext = async () => {
+            if (this.queryQueue.length > 0) {
+              await this.executeNextQuery();
+              setTimeout(executeNext, 100);
+            }
+          };
+
+          executeNext();
+        }
+
+        clearSingleThreadDemo() {
+          this.queryQueue = [];
+          this.isExecuting = false;
+          this.connections.forEach((c) => (c.inUse = false));
+          this.renderSingleThread();
+          this.updateExecutionStatus("Idle", "None", 0);
+          this.showNotification("🔄 Queue cleared");
+        }
+
+        showNotification(message) {
+          console.log(message);
+        }
+      }
+
+      // Initialize single thread demo
+      const singleThreadDemo = new SingleThreadDemo();
+
       // Global functions for buttons
       function requestConnection() {
         poolViz.requestConnection();
@@ -1126,6 +1378,972 @@
       function reset() {
         poolViz.reset();
       }
+
+      // Single thread demo functions
+      function addQueryToQueue(type) {
+        singleThreadDemo.addQueryToQueue(type);
+      }
+
+      function executeNextQuery() {
+        singleThreadDemo.executeNextQuery();
+      }
+
+      function executeAllQueries() {
+        singleThreadDemo.executeAllQueries();
+      }
+
+      function clearSingleThreadDemo() {
+        singleThreadDemo.clearSingleThreadDemo();
+      }
     </script>
+
+    <div style="max-width: 1400px; margin: 40px auto 20px; padding: 0 20px">
+      <div class="gof-pattern-card">
+        <div class="gof-header">
+          <div class="gof-title">Connection Pool</div>
+          <div class="gof-subtitle">Object Creational Pattern</div>
+        </div>
+
+        <div class="gof-section">
+          <div class="gof-section-title">Intent</div>
+          <div class="gof-content">
+            Manage a pool of reusable objects to avoid expensive acquisition and
+            release of resources. Provides thread-safe access to a limited
+            number of resource instances, automatically handling their lifecycle
+            through RAII semantics.
+          </div>
+        </div>
+
+        <div class="gof-section">
+          <div class="gof-section-title">Also Known As</div>
+          <div class="gof-content">
+            Resource Pool, Object Pool with Handle, RAII Pool Manager
+          </div>
+        </div>
+
+        <div class="gof-section">
+          <div class="gof-section-title">Motivation</div>
+          <div class="gof-content">
+            Database connections are expensive to create (100-300ms) and there's
+            typically a limit on concurrent connections. Applications need
+            efficient connection reuse without the complexity of manual resource
+            management. Consider a web server handling thousands of requests per
+            second - creating a new database connection for each request would
+            be prohibitively expensive and could exhaust database resources.
+            <br /><br />
+            The Connection Pool pattern solves this by maintaining a collection
+            of pre-initialized connections that can be borrowed and returned.
+            The Handle idiom ensures automatic return through RAII, preventing
+            resource leaks even in the presence of exceptions.
+          </div>
+        </div>
+
+        <div class="gof-section">
+          <div class="gof-section-title">Applicability</div>
+          <div class="gof-content">
+            Use the Connection Pool pattern when:
+            <ul class="gof-list">
+              <li>
+                Object creation is expensive (network connections, thread
+                creation, large buffers)
+              </li>
+              <li>
+                You need to limit the number of instances due to resource
+                constraints
+              </li>
+              <li>Objects are frequently acquired and released</li>
+              <li>Thread-safety is required for concurrent access</li>
+              <li>Automatic resource management is desired (RAII)</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="gof-section">
+          <div class="gof-section-title">Structure</div>
+          <div class="gof-diagram">
+            <svg viewBox="0 0 800 450" xmlns="http://www.w3.org/2000/svg">
+              <!-- ConnectionPool class -->
+              <rect
+                x="250"
+                y="50"
+                width="300"
+                height="180"
+                fill="#f7fafc"
+                stroke="#4a5568"
+                stroke-width="2"
+              />
+              <line
+                x1="250"
+                y1="90"
+                x2="550"
+                y2="90"
+                stroke="#4a5568"
+                stroke-width="1"
+              />
+              <line
+                x1="250"
+                y1="160"
+                x2="550"
+                y2="160"
+                stroke="#4a5568"
+                stroke-width="1"
+              />
+              <text
+                x="400"
+                y="75"
+                text-anchor="middle"
+                font-weight="bold"
+                font-size="16"
+              >
+                ConnectionPool
+              </text>
+              <text x="260" y="110" font-size="12">
+                - connections: vector&lt;PooledConnection&gt;
+              </text>
+              <text x="260" y="130" font-size="12">
+                - available_indices: queue&lt;size_t&gt;
+              </text>
+              <text x="260" y="150" font-size="12">- pool_mutex: mutex</text>
+              <text x="260" y="180" font-size="12">
+                + getConnection(): ConnectionHandle
+              </text>
+              <text x="260" y="200" font-size="12">
+                - returnConnection(size_t)
+              </text>
+              <text x="260" y="220" font-size="12">- createConnection()</text>
+
+              <!-- PooledConnection struct (nested) -->
+              <rect
+                x="50"
+                y="280"
+                width="250"
+                height="100"
+                fill="#f7fafc"
+                stroke="#4a5568"
+                stroke-width="2"
+              />
+              <line
+                x1="50"
+                y1="320"
+                x2="300"
+                y2="320"
+                stroke="#4a5568"
+                stroke-width="1"
+              />
+              <text
+                x="175"
+                y="305"
+                text-anchor="middle"
+                font-weight="bold"
+                font-size="16"
+              >
+                PooledConnection
+              </text>
+              <text x="60" y="340" font-size="12">
+                + conn: unique_ptr&lt;connection&gt;
+              </text>
+              <text x="60" y="360" font-size="12">+ last_used: time_point</text>
+              <text x="60" y="375" font-size="12">+ in_use: bool</text>
+
+              <!-- ConnectionHandle class (nested) -->
+              <rect
+                x="500"
+                y="280"
+                width="250"
+                height="140"
+                fill="#f7fafc"
+                stroke="#4a5568"
+                stroke-width="2"
+              />
+              <line
+                x1="500"
+                y1="320"
+                x2="750"
+                y2="320"
+                stroke="#4a5568"
+                stroke-width="1"
+              />
+              <text
+                x="625"
+                y="305"
+                text-anchor="middle"
+                font-weight="bold"
+                font-size="16"
+              >
+                ConnectionHandle
+              </text>
+              <text x="510" y="340" font-size="12">
+                - conn: pqxx::connection*
+              </text>
+              <text x="510" y="360" font-size="12">
+                - pool: ConnectionPool*
+              </text>
+              <text x="510" y="380" font-size="12">- index: size_t</text>
+              <text x="510" y="400" font-size="12">
+                + operator*(): connection&amp;
+              </text>
+              <text x="510" y="415" font-size="12">+ ~ConnectionHandle()</text>
+
+              <!-- Nested relationship indicators -->
+              <!-- PooledConnection nested in ConnectionPool -->
+              <line
+                x1="330"
+                y1="230"
+                x2="175"
+                y2="280"
+                stroke="#4a5568"
+                stroke-width="2"
+              />
+              <circle
+                cx="330"
+                cy="230"
+                r="8"
+                fill="white"
+                stroke="#4a5568"
+                stroke-width="2"
+              />
+              <line
+                x1="322"
+                y1="230"
+                x2="338"
+                y2="230"
+                stroke="#4a5568"
+                stroke-width="2"
+              />
+              <line
+                x1="330"
+                y1="222"
+                x2="330"
+                y2="238"
+                stroke="#4a5568"
+                stroke-width="2"
+              />
+              <text x="240" y="255" font-size="11" font-style="italic">
+                nested struct
+              </text>
+
+              <!-- ConnectionHandle nested in ConnectionPool -->
+              <line
+                x1="470"
+                y1="230"
+                x2="625"
+                y2="280"
+                stroke="#4a5568"
+                stroke-width="2"
+              />
+              <circle
+                cx="470"
+                cy="230"
+                r="8"
+                fill="white"
+                stroke="#4a5568"
+                stroke-width="2"
+              />
+              <line
+                x1="462"
+                y1="230"
+                x2="478"
+                y2="230"
+                stroke="#4a5568"
+                stroke-width="2"
+              />
+              <line
+                x1="470"
+                y1="222"
+                x2="470"
+                y2="238"
+                stroke="#4a5568"
+                stroke-width="2"
+              />
+              <text x="520" y="255" font-size="11" font-style="italic">
+                nested class
+              </text>
+
+              <!-- Composition: ConnectionPool has vector of PooledConnections -->
+              <line
+                x1="260"
+                y1="100"
+                x2="175"
+                y2="100"
+                stroke="#4a5568"
+                stroke-width="2"
+              />
+              <line
+                x1="175"
+                y1="100"
+                x2="175"
+                y2="280"
+                stroke="#4a5568"
+                stroke-width="2"
+              />
+              <polygon points="175,280 170,270 180,270" fill="#4a5568" />
+              <rect x="170" y="265" width="10" height="10" fill="#4a5568" />
+              <text x="185" y="190" font-size="11">1..*</text>
+
+              <!-- Creates/Returns relationship -->
+              <line
+                x1="540"
+                y1="170"
+                x2="625"
+                y2="170"
+                stroke="#4a5568"
+                stroke-width="2"
+                stroke-dasharray="5,5"
+              />
+              <line
+                x1="625"
+                y1="170"
+                x2="625"
+                y2="280"
+                stroke="#4a5568"
+                stroke-width="2"
+                stroke-dasharray="5,5"
+              />
+              <polygon points="625,280 620,270 630,270" fill="#4a5568" />
+              <text x="570" y="165" font-size="11" font-style="italic">
+                «create»
+              </text>
+
+              <!-- Back reference from Handle to Pool -->
+              <line
+                x1="510"
+                y1="350"
+                x2="400"
+                y2="350"
+                stroke="#667eea"
+                stroke-width="1"
+                stroke-dasharray="3,3"
+              />
+              <line
+                x1="400"
+                y1="350"
+                x2="400"
+                y2="230"
+                stroke="#667eea"
+                stroke-width="1"
+                stroke-dasharray="3,3"
+              />
+              <polygon points="400,230 395,240 405,240" fill="#667eea" />
+              <text x="430" y="345" font-size="10" fill="#667eea">
+                references
+              </text>
+
+              <!-- Legend -->
+              <g transform="translate(50, 410)">
+                <text x="0" y="0" font-size="12" font-weight="bold">
+                  UML Notation:
+                </text>
+                <circle
+                  cx="20"
+                  cy="15"
+                  r="6"
+                  fill="white"
+                  stroke="#4a5568"
+                  stroke-width="1.5"
+                />
+                <line
+                  x1="14"
+                  y1="15"
+                  x2="26"
+                  y2="15"
+                  stroke="#4a5568"
+                  stroke-width="1.5"
+                />
+                <line
+                  x1="20"
+                  y1="9"
+                  x2="20"
+                  y2="21"
+                  stroke="#4a5568"
+                  stroke-width="1.5"
+                />
+                <text x="35" y="19" font-size="11">
+                  Nested class (inner class)
+                </text>
+
+                <rect x="14" y="28" width="6" height="6" fill="#4a5568" />
+                <polygon points="20,34 14,44 26,44" fill="#4a5568" />
+                <text x="35" y="40" font-size="11">
+                  Composition (owns, strong lifecycle)
+                </text>
+
+                <line
+                  x1="14"
+                  y1="52"
+                  x2="26"
+                  y2="52"
+                  stroke="#4a5568"
+                  stroke-width="1.5"
+                  stroke-dasharray="3,3"
+                />
+                <text x="35" y="56" font-size="11">
+                  Dependency (uses, creates)
+                </text>
+              </g>
+            </svg>
+          </div>
+        </div>
+
+        <div class="gof-section">
+          <div class="gof-section-title">Participants</div>
+          <div class="gof-content">
+            <div class="gof-participant">
+              <strong>ConnectionPool</strong>
+              <ul class="gof-list">
+                <li>Maintains pool of reusable connections</li>
+                <li>Provides thread-safe access through mutex</li>
+                <li>Tracks available and in-use connections</li>
+                <li>Creates ConnectionHandle for RAII management</li>
+              </ul>
+            </div>
+            <div class="gof-participant">
+              <strong>ConnectionHandle</strong>
+              <ul class="gof-list">
+                <li>RAII wrapper for borrowed connection</li>
+                <li>Provides transparent access via operator overloading</li>
+                <li>Automatically returns connection on destruction</li>
+                <li>Move-only semantics (no copying)</li>
+              </ul>
+            </div>
+            <div class="gof-participant">
+              <strong>PooledConnection</strong>
+              <ul class="gof-list">
+                <li>Wraps actual connection with metadata</li>
+                <li>Tracks usage state and timestamp</li>
+              </ul>
+            </div>
+            <div class="gof-participant">
+              <strong>Client</strong>
+              <ul class="gof-list">
+                <li>Requests connections from pool</li>
+                <li>Uses connection through handle interface</li>
+                <li>Automatic cleanup via RAII</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div class="gof-section">
+          <div class="gof-section-title">Collaborations</div>
+          <div class="gof-sequence">
+            <svg viewBox="0 0 700 400" xmlns="http://www.w3.org/2000/svg">
+              <!-- Participants -->
+              <rect
+                x="50"
+                y="20"
+                width="80"
+                height="40"
+                fill="#e6fffa"
+                stroke="#4a5568"
+                stroke-width="2"
+              />
+              <text x="90" y="45" text-anchor="middle" font-size="14">
+                Client
+              </text>
+              <line
+                x1="90"
+                y1="60"
+                x2="90"
+                y2="380"
+                stroke="#4a5568"
+                stroke-width="1"
+                stroke-dasharray="2,2"
+              />
+
+              <rect
+                x="250"
+                y="20"
+                width="100"
+                height="40"
+                fill="#f7fafc"
+                stroke="#4a5568"
+                stroke-width="2"
+              />
+              <text x="300" y="45" text-anchor="middle" font-size="14">
+                Pool
+              </text>
+              <line
+                x1="300"
+                y1="60"
+                x2="300"
+                y2="380"
+                stroke="#4a5568"
+                stroke-width="1"
+                stroke-dasharray="2,2"
+              />
+
+              <rect
+                x="450"
+                y="20"
+                width="100"
+                height="40"
+                fill="#f7fafc"
+                stroke="#4a5568"
+                stroke-width="2"
+              />
+              <text x="500" y="45" text-anchor="middle" font-size="14">
+                Handle
+              </text>
+              <line
+                x1="500"
+                y1="60"
+                x2="500"
+                y2="380"
+                stroke="#4a5568"
+                stroke-width="1"
+                stroke-dasharray="2,2"
+              />
+
+              <!-- Messages -->
+              <!-- 1. getConnection() -->
+              <line
+                x1="90"
+                y1="100"
+                x2="295"
+                y2="100"
+                stroke="#4a5568"
+                stroke-width="2"
+                marker-end="url(#arrowhead)"
+              />
+              <text x="190" y="95" font-size="12">1: getConnection()</text>
+
+              <!-- 2. lock mutex -->
+              <rect
+                x="305"
+                y="110"
+                width="80"
+                height="20"
+                fill="#fef3c7"
+                stroke="#f59e0b"
+                stroke-width="1"
+              />
+              <text x="345" y="124" text-anchor="middle" font-size="11">
+                lock mutex
+              </text>
+
+              <!-- 3. create Handle -->
+              <line
+                x1="305"
+                y1="150"
+                x2="495"
+                y2="150"
+                stroke="#4a5568"
+                stroke-width="2"
+                marker-end="url(#arrowhead)"
+              />
+              <text x="400" y="145" font-size="12">2: new Handle</text>
+
+              <!-- 4. return Handle -->
+              <line
+                x1="295"
+                y1="180"
+                x2="95"
+                y2="180"
+                stroke="#4a5568"
+                stroke-width="2"
+                stroke-dasharray="5,5"
+                marker-end="url(#arrowhead)"
+              />
+              <text x="195" y="175" font-size="12">3: return Handle</text>
+
+              <!-- 5. use connection -->
+              <rect
+                x="50"
+                y="200"
+                width="80"
+                height="40"
+                fill="#d1fae5"
+                stroke="#10b981"
+                stroke-width="1"
+              />
+              <text x="90" y="225" text-anchor="middle" font-size="11">
+                use conn
+              </text>
+
+              <!-- 6. ~Handle() -->
+              <line
+                x1="95"
+                y1="270"
+                x2="495"
+                y2="270"
+                stroke="#4a5568"
+                stroke-width="2"
+                marker-end="url(#arrowhead)"
+              />
+              <text x="295" y="265" font-size="12">4: ~Handle()</text>
+
+              <!-- 7. returnConnection -->
+              <line
+                x1="495"
+                y1="300"
+                x2="305"
+                y2="300"
+                stroke="#4a5568"
+                stroke-width="2"
+                marker-end="url(#arrowhead)"
+              />
+              <text x="400" y="295" font-size="12">5: returnConnection()</text>
+
+              <!-- 8. unlock/notify -->
+              <rect
+                x="305"
+                y="320"
+                width="100"
+                height="20"
+                fill="#fef3c7"
+                stroke="#f59e0b"
+                stroke-width="1"
+              />
+              <text x="355" y="334" text-anchor="middle" font-size="11">
+                unlock/notify
+              </text>
+
+              <!-- Arrow marker -->
+              <defs>
+                <marker
+                  id="arrowhead"
+                  markerWidth="10"
+                  markerHeight="7"
+                  refX="9"
+                  refY="3.5"
+                  orient="auto"
+                >
+                  <polygon points="0 0, 10 3.5, 0 7" fill="#4a5568" />
+                </marker>
+              </defs>
+            </svg>
+          </div>
+        </div>
+
+        <div class="gof-section">
+          <div class="gof-section-title">Consequences</div>
+          <div class="gof-content">
+            <div class="gof-consequence">
+              <strong>Benefits:</strong>
+              <ul class="gof-list">
+                <li>
+                  <strong>Performance:</strong> Eliminates expensive connection
+                  creation/destruction (100x+ speedup)
+                </li>
+                <li>
+                  <strong>Resource Control:</strong> Enforces connection limits,
+                  prevents resource exhaustion
+                </li>
+                <li>
+                  <strong>Thread Safety:</strong> Built-in synchronization for
+                  concurrent access
+                </li>
+                <li>
+                  <strong>Automatic Management:</strong> RAII ensures no
+                  resource leaks
+                </li>
+                <li>
+                  <strong>Transparency:</strong> Handle provides seamless access
+                  through operator overloading
+                </li>
+              </ul>
+            </div>
+            <div class="gof-consequence">
+              <strong>Liabilities:</strong>
+              <ul class="gof-list">
+                <li>
+                  <strong>Serialization Overhead:</strong> Mutex creates
+                  contention point (microseconds per acquisition)
+                </li>
+                <li>
+                  <strong>Memory Overhead:</strong> Maintains minimum
+                  connections even when idle
+                </li>
+                <li>
+                  <strong>Complexity:</strong> More complex than direct
+                  connection creation
+                </li>
+                <li>
+                  <strong>Single-Thread Inefficiency:</strong> Thread-safety
+                  overhead without benefit in single-threaded apps
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div class="gof-section">
+          <div class="gof-section-title">Implementation</div>
+          <div class="gof-code">
+            <pre><code class="language-cpp">class ConnectionPool {
+private:
+    struct PooledConnection {
+        std::unique_ptr&lt;pqxx::connection&gt; conn;
+        std::chrono::steady_clock::time_point last_used;
+        bool in_use;
+    };
+    
+    std::vector&lt;PooledConnection&gt; connections;
+    std::queue&lt;size_t&gt; available_indices;
+    mutable std::mutex pool_mutex;
+    std::condition_variable pool_cv;
+    
+public:
+    class ConnectionHandle {
+    private:
+        pqxx::connection* conn;
+        ConnectionPool* pool;
+        size_t index;
+        
+    public:
+        ~ConnectionHandle() {
+            if (pool && conn) {
+                pool->returnConnection(index);
+            }
+        }
+        
+        pqxx::connection& operator*() { return *conn; }
+        pqxx::connection* operator->() { return conn; }
+        
+        // Move-only semantics
+        ConnectionHandle(ConnectionHandle&& other) noexcept;
+        ConnectionHandle(const ConnectionHandle&) = delete;
+    };
+    
+    ConnectionHandle getConnection() {
+        std::unique_lock&lt;std::mutex&gt; lock(pool_mutex);
+        
+        // Wait if no connections available
+        pool_cv.wait(lock, [this] { 
+            return !available_indices.empty(); 
+        });
+        
+        size_t index = available_indices.front();
+        available_indices.pop();
+        connections[index].in_use = true;
+        
+        return ConnectionHandle(
+            connections[index].conn.get(), 
+            this, 
+            index
+        );
+    }
+    
+private:
+    void returnConnection(size_t index) {
+        std::lock_guard&lt;std::mutex&gt; lock(pool_mutex);
+        connections[index].in_use = false;
+        available_indices.push(index);
+        pool_cv.notify_one();
+    }
+};</code></pre>
+          </div>
+        </div>
+
+        <div class="gof-section">
+          <div class="gof-section-title">Sample Code</div>
+          <div class="gof-code">
+            <pre><code class="language-cpp">// Usage example
+void processRequests(ConnectionPool& pool) {
+    std::vector&lt;std::thread&gt; threads;
+    
+    for (int i = 0; i < 10; ++i) {
+        threads.emplace_back([&pool, i]() {
+            // Acquire connection (automatic via RAII)
+            auto handle = pool.getConnection();
+            
+            // Use connection transparently
+            pqxx::work txn(*handle);
+            auto result = txn.exec(
+                "SELECT * FROM users WHERE id = " + 
+                std::to_string(i)
+            );
+            txn.commit();
+            
+            // Connection automatically returned when 
+            // handle goes out of scope
+        }); // ~ConnectionHandle() called here
+    }
+    
+    for (auto& t : threads) {
+        t.join();
+    }
+}</code></pre>
+          </div>
+        </div>
+
+        <div class="gof-section">
+          <div class="gof-section-title">Known Uses</div>
+          <div class="gof-content">
+            <ul class="gof-list">
+              <li>
+                <strong>Apache DBCP:</strong> Database connection pooling for
+                Java applications
+              </li>
+              <li>
+                <strong>HikariCP:</strong> High-performance JDBC connection pool
+              </li>
+              <li><strong>pgBouncer:</strong> PostgreSQL connection pooler</li>
+              <li>
+                <strong>.NET SqlConnection:</strong> Built-in connection pooling
+              </li>
+              <li>
+                <strong>Node.js pg-pool:</strong> PostgreSQL connection pool for
+                Node.js
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="gof-section">
+          <div class="gof-section-title">Related Patterns</div>
+          <div class="gof-content">
+            <ul class="gof-list">
+              <li>
+                <strong>Singleton:</strong> Pool itself is often implemented as
+                a singleton
+              </li>
+              <li>
+                <strong>Factory Method:</strong> Pool acts as factory for
+                connection handles
+              </li>
+              <li>
+                <strong>Proxy:</strong> ConnectionHandle proxies the actual
+                connection
+              </li>
+              <li>
+                <strong>Flyweight:</strong> Shares immutable connection
+                configuration
+              </li>
+              <li>
+                <strong>Object Pool:</strong> Base pattern that Connection Pool
+                specializes
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <style>
+      .gof-pattern-card {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+        font-family: "Georgia", "Times New Roman", serif;
+      }
+
+      .gof-header {
+        background: linear-gradient(135deg, #1e3a8a 0%, #3730a3 100%);
+        color: white;
+        padding: 30px;
+        text-align: center;
+      }
+
+      .gof-title {
+        font-size: 2.5em;
+        font-weight: bold;
+        margin-bottom: 10px;
+        font-family: "Georgia", serif;
+      }
+
+      .gof-subtitle {
+        font-size: 1.2em;
+        opacity: 0.9;
+        font-style: italic;
+      }
+
+      .gof-section {
+        padding: 25px 30px;
+        border-bottom: 1px solid #e5e7eb;
+      }
+
+      .gof-section:last-child {
+        border-bottom: none;
+      }
+
+      .gof-section-title {
+        font-size: 1.4em;
+        font-weight: bold;
+        color: #1e3a8a;
+        margin-bottom: 15px;
+        font-family: "Georgia", serif;
+      }
+
+      .gof-content {
+        color: #374151;
+        line-height: 1.8;
+        font-size: 1.05em;
+      }
+
+      .gof-list {
+        margin-left: 20px;
+        margin-top: 10px;
+      }
+
+      .gof-list li {
+        margin-bottom: 8px;
+      }
+
+      .gof-participant {
+        margin-bottom: 20px;
+        padding-left: 20px;
+        border-left: 3px solid #3730a3;
+      }
+
+      .gof-consequence {
+        margin-bottom: 20px;
+      }
+
+      .gof-diagram {
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        border: 1px solid #e5e7eb;
+        margin-top: 15px;
+      }
+
+      .gof-sequence {
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        border: 1px solid #e5e7eb;
+        margin-top: 15px;
+      }
+
+      .gof-code {
+        background: #1e293b;
+        color: #e2e8f0;
+        padding: 20px;
+        border-radius: 8px;
+        margin-top: 15px;
+        overflow-x: auto;
+      }
+
+      .gof-code pre {
+        margin: 0;
+        font-family: "Courier New", monospace;
+        font-size: 0.9em;
+        line-height: 1.6;
+      }
+
+      .gof-code code {
+        color: #e2e8f0;
+      }
+
+      /* Syntax highlighting */
+      .language-cpp .keyword {
+        color: #c084fc;
+      }
+
+      .language-cpp .type {
+        color: #60a5fa;
+      }
+
+      .language-cpp .comment {
+        color: #64748b;
+        font-style: italic;
+      }
+
+      .language-cpp .string {
+        color: #86efac;
+      }
+    </style>
   </body>
 </html>

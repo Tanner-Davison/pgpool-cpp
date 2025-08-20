@@ -8,7 +8,11 @@
 #include <queue>
 #include <string>
 #include <vector>
-
+// ConnectionPool
+// |__PooledConnection
+//    |__
+// |
+// |__ ConnectionHandle
 class ConnectionPool {
  private:
    struct PooledConnection {
@@ -67,6 +71,6 @@ class ConnectionPool {
    }
 
  public:
-   size_t activeConnections() const;
-   size_t totalConnections() const;
+   size_t activeConnections();
+   size_t totalConnections();
 };
