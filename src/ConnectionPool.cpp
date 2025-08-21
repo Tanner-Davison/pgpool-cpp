@@ -1,12 +1,14 @@
 #include "ConnectionPool.hpp"
 #include <chrono>
+#include <iostream>
 
 ConnectionPool::ConnectionPool(const std::string& conn_str, size_t min_conns, size_t max_conns)
     : connection_string(conn_str), min_connections(min_conns), max_connections(max_conns) {
    for (size_t i = 0; i < min_conns; ++i) {
       createConnection();
-      std::cout << "Connection pool initialized with " << min_connections << " connections" << std::endl;
    }
+
+   std::cout << "Connection pool initialized with " << min_connections << " connections" << std::endl;
 }
 
 void ConnectionPool::createConnection() {
@@ -25,6 +27,14 @@ ConnectionPool::ConnectionHandle::ConnectionHandle(ConnectionHandle&& other) noe
    other.conn = nullptr;
    other.pool = nullptr;
 };
+
+void ConnectionPool::returnConnection(size_t index) {
+   std::lock_guard<std::mutex> lock(pool_mutex);
+   connections[index].in_use = false;
+   available_indices.push(index);
+   pool_cv.notify_one();
+}
+
 ConnectionPool::ConnectionHandle::~ConnectionHandle() {
    if (pool && conn) {
       pool->returnConnection(index);
@@ -47,11 +57,11 @@ ConnectionPool::ConnectionHandle ConnectionPool::getConnection() { // Returns a 
    return ConnectionHandle(connections[index].conn.get(), this, index);
 }
 
-size_t ConnectionPool::activeConnections() { // using mutable do not const
+size_t ConnectionPool::activeConnections() const { // using mutable do not const
    std::lock_guard<std::mutex> lock(pool_mutex);
    return connections.size() - available_indices.size();
 }
-size_t ConnectionPool::totalConnections() { // using mutable do not const
+size_t ConnectionPool::totalConnections() const { // using mutable do not const
    std::lock_guard<std::mutex> lock(pool_mutex);
    return connections.size();
 }
