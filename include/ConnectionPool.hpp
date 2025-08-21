@@ -1,3 +1,4 @@
+// Copyright (c) 2025 Tanner Davison. All Rights Reserved.
 #pragma once
 #include <chrono>
 #include <condition_variable>
@@ -8,11 +9,18 @@
 #include <queue>
 #include <string>
 #include <vector>
-// ConnectionPool
-// |__PooledConnection
-//    |__
-// |
-// |__ ConnectionHandle
+
+/*ConnectionPool
+├── PooledConnection (stored in pool)
+│   ├── pqxx::connection
+│   ├── last_used timestamp
+│   └── in_use flag
+│
+└── ConnectionHandle (returned from getConnection())
+   ├── connection pointer
+   ├── pool reference
+   └── index
+* */
 class ConnectionPool {
  private:
    struct PooledConnection {

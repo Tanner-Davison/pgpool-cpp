@@ -2,7 +2,17 @@
 #include "ConnectionPool.hpp"
 #include <iostream>
 #include <string>
-// Wr450f
+/*
+ * THIS IS A BASIC IMPLEMENTATION OF CONNECTING AND CREATING
+ * A CONNECTION HANDLER (SINGLE THREADED IMPLEMENTATION)
+ *
+ *    ConnectionPool implmentation takes->
+ * 1. Host
+ * 2. Port
+ * 3. Database name
+ *
+ */
+
 int main() {
    std::string connection_string = "host=localhost port=5432 dbname=tanner user=tanner ";
 
