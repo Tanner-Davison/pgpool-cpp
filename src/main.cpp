@@ -28,7 +28,7 @@ int main() {
 
       std::cout << "=== Connection Pool Demo ===\n\n";
 
-      // Demonstrate RAII connection management
+      // Demonstrates RAII connection management
       {
          std::cout << "Acquiring connections...\n";
          auto conn1 = pool.getConnection();
@@ -37,7 +37,7 @@ int main() {
          std::cout << "Active connections: " << pool.activeConnections() << "\n";
          std::cout << "Total connections:  " << pool.totalConnections() << "\n\n";
 
-         // Optional: Actually use the connections
+         //  use the connections
          if (conn1->is_open()) {
             std::cout << "Connection 1: Connected to " << conn1->dbname() << "\n";
          }
