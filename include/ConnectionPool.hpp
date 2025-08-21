@@ -9,18 +9,16 @@
 #include <queue>
 #include <string>
 #include <vector>
+/**
+ * ConnectionPool
+ *   ├─[owns]→ vector<PooledConnection>
+ *   │            └─[contains]→ pqxx::connection
+ *   │
+ *   └─[creates]→ ConnectionHandle
+ *                  └─[borrows]→ PooledConnection
+ *                  └─[references]→ ConnectionPool
+ */
 
-/*ConnectionPool
-├── PooledConnection (stored in pool)
-│   ├── pqxx::connection
-│   ├── last_used timestamp
-│   └── in_use flag
-│
-└── ConnectionHandle (returned from getConnection())
-   ├── connection pointer
-   ├── pool reference
-   └── index
-* */
 class ConnectionPool {
  private:
    struct PooledConnection {
