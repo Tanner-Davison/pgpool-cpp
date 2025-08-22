@@ -1,9 +1,9 @@
 // Copyright (c) 2025 Tanner Davison. All Rights Reserved.
 #include "ConnectionPool.hpp"
-
+#include "TableCreator.hpp"
 #include <iostream>
 #include <string>
-
+#include <thread>
 /**
  * Basic demonstration of ConnectionPool with RAII connection handling.
  *
@@ -20,46 +20,24 @@
  */
 int main() {
    try {
-      // Connection string format for PostgreSQL
       const std::string connection_string = "host=localhost port=5432 dbname=tanner user=tanner";
 
-      // Create pool with default settings (1 min, 10 max connections)
-      ConnectionPool pool(connection_string);
+      auto pool = std::make_shared<ConnectionPool>(connection_string, 2, 10);
 
-      std::cout << "=== Connection Pool Demo ===\n\n";
+      TableCreator tableCreator(pool);
 
-      // Demonstrates RAII connection management
-      {
-         std::cout << "Acquiring connections...\n";
-         auto conn1 = pool.getConnection();
-         auto conn2 = pool.getConnection();
+      std::string schema =
+          "id SERIAL PRIMARY KEY, "
+          "name VARCHAR(100) NOT NULL, "
+          "email VARCHAR(255) UNIQUE, "
+          "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP";
 
-         std::cout << "Active connections: " << pool.activeConnections() << "\n";
-         std::cout << "Total connections:  " << pool.totalConnections() << "\n\n";
+      tableCreator.createTable("users", schema);
 
-         //  use the connections
-         if (conn1->is_open()) {
-            std::cout << "Connection 1: Connected to " << conn1->dbname() << "\n";
-         }
-         if (conn2->is_open()) {
-            std::cout << "Connection 2: Connected to " << conn2->dbname() << "\n";
-         }
-
-         std::cout << "\nConnections will be returned to pool at end of scope...\n";
-      } // Connections automatically returned here
-
-      std::cout << "\nAfter scope:\n";
-      std::cout << "Active connections: " << pool.activeConnections() << "\n";
-      std::cout << "Total connections:  " << pool.totalConnections() << "\n";
-
-   } catch (const pqxx::broken_connection& e) {
-      std::cerr << "Database connection failed: " << e.what() << "\n";
-      return 1;
    } catch (const std::exception& e) {
-      std::cerr << "Error: " << e.what() << "\n";
-      return 1;
+      std::cout << "Error: " << e.what() << std::endl;
    }
-
-   std::cout << "\n=== Demo completed successfully ===\n";
+   unsigned int n = std::thread::hardware_concurrency();
+   std::cout << "This system can run " << n << " threads in parallel\n";
    return 0;
 }

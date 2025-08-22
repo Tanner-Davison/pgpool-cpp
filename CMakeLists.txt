@@ -22,6 +22,7 @@ find_package(libpqxx CONFIG REQUIRED)
 set(SOURCES
     src/main.cpp
     src/ConnectionPool.cpp
+    src/TableCreator.cpp
 )
 
 add_executable(${PROJECT_NAME} ${SOURCES})
