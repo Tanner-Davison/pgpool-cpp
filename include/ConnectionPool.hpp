@@ -9,7 +9,7 @@
 #include <string>
 #include <vector>
 
-#include <pqxx/pqxx> // External headers typically go after standard headers
+#include <pqxx/pqxx>
 
 /**
  * ConnectionPool
