@@ -22,7 +22,7 @@
  */
 class ConnectionPool {
  public:
-   // Forward declare nested class
+   // Forward declare class
    class ConnectionHandle;
 
    explicit ConnectionPool(const std::string& conn_str, size_t min_conns = 1, size_t max_conns = 10);
