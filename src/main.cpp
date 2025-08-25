@@ -1,5 +1,7 @@
 // Copyright (c) 2025 Tanner Davison. All Rights Reserved.
 #include "ConnectionPool.hpp"
+#include "DataModifier.hpp"
+#include "QueryExecutor.hpp"
 #include "TableCreator.hpp"
 #include <iostream>
 #include <string>
@@ -30,9 +32,23 @@ int main() {
           "id SERIAL PRIMARY KEY, "
           "name VARCHAR(100) NOT NULL, "
           "email VARCHAR(255) UNIQUE, "
+          "age NUMERIC(2), "
           "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP";
 
+      tableCreator.dropTable("users");
       tableCreator.createTable("users", schema);
+
+      {
+         const std::vector<std::string> user_columns = {"name", "email", "age"};
+
+         const std::vector<std::string> user_values_1{"Tanner Davison", "tboydavison@gmail.com", "30"};
+         const std::vector<std::string> user_values{"John", "john-doe@gmail.com", "49"};
+
+         DataModifier updateUsers(pool);
+
+         updateUsers.insert("users", user_columns, user_values_1);
+         updateUsers.insert("users", user_columns, user_values);
+      }
 
    } catch (const std::exception& e) {
       std::cout << "Error: " << e.what() << std::endl;

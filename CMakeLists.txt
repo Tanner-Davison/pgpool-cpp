@@ -23,6 +23,8 @@ set(SOURCES
     src/main.cpp
     src/ConnectionPool.cpp
     src/TableCreator.cpp
+    src/QueryExecutor.cpp
+    src/DataModifier.cpp
 )
 
 add_executable(${PROJECT_NAME} ${SOURCES})

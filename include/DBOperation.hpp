@@ -1,4 +1,4 @@
-
+#pragma once
 #include "ConnectionPool.hpp"
 #include <memory>
 class DBOperation {

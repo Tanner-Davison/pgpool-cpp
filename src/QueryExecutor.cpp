@@ -1,4 +1,5 @@
 #include "QueryExecutor.hpp"
+
 /* Helpful Client Decision Tree
  *  Does the query involve ANY user input?
 ├── YES → Use selectPrepared() (or build safe query with escaping)
