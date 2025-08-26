@@ -8,6 +8,7 @@
     └── NO → Is it complex (JOINs, multiple conditions, aggregations)?
         ├── YES → Use select() with hardcoded query
         └── NO → Use selectPrepared() for safety
+
  * */
 
 pqxx::result QueryExecutor::select(const std::string& query) {
