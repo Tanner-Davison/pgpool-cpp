@@ -85,7 +85,7 @@ POOL_SIZE=5
 EOF
 fi
 
-# Create QtCreator project file for easier IDE integration
+# QtCreator project file for easier IDE integration
 cat > pgpool-cpp.pro << 'EOF'
 TEMPLATE = app
 TARGET = pgpool-cpp
@@ -97,6 +97,7 @@ INCLUDEPATH += include/
 SOURCES += \
     src/main.cpp \
     src/MainWindow.cpp \
+    src/InsertDialog.cpp \
     src/ConnectionPool.cpp \
     src/DatabaseManager.cpp \
     src/DataModifier.cpp \
@@ -110,7 +111,8 @@ HEADERS += \
     include/DataModifier.hpp \
     include/DBOperation.hpp \
     include/QueryExecutor.hpp \
-    include/TableCreator.hpp
+    include/TableCreator.hpp \
+    include/InsertDialog.hpp 
 
 LIBS += -lpqxx -lpq
 EOF

@@ -30,7 +30,7 @@ find_package(Qt6 REQUIRED COMPONENTS Core Widgets Network Sql)
 set(SOURCES
     src/main.cpp
     src/MainWindow.cpp
-    src/InsertDialog.cpp    # Add this line
+    src/InsertDialog.cpp  
     src/ConnectionPool.cpp
     src/TableCreator.cpp
     src/QueryExecutor.cpp

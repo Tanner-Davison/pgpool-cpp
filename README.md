@@ -371,6 +371,265 @@ The application provides comprehensive debugging information:
 - **Windows**: Verify MinGW/MSVC compatibility and Qt6 paths
 - **macOS**: Check Homebrew Qt6 installation and permissions
 
+## 🔧 Debugging & Getting Things Running
+
+### Build Troubleshooting
+
+#### CMake Configuration Issues
+```bash
+# If CMake can't find Qt6
+export CMAKE_PREFIX_PATH="/path/to/qt6:$CMAKE_PREFIX_PATH"
+
+# For vcpkg integration issues
+cmake .. -DCMAKE_TOOLCHAIN_FILE=/path/to/vcpkg/scripts/buildsystems/vcpkg.cmake
+
+# Clean build if you encounter strange errors
+cd build
+ninja clean
+cmake ..
+ninja
+```
+
+#### Compilation Errors
+```bash
+# Check compiler version (C++17 required)
+g++ --version
+clang++ --version
+
+# Verify Qt6 installation
+qmake6 --version
+qt6-config --version
+
+# Check if all dependencies are found
+cmake .. -LAH | grep -E "(Qt6|libpqxx|PostgreSQL)"
+```
+
+### Runtime Troubleshooting
+
+#### Display Issues (Linux/WSL)
+```bash
+# Check if display is set
+echo $DISPLAY
+
+# Set display for local terminal
+export DISPLAY=:0
+
+# For WSL, you might need X11 forwarding
+export DISPLAY=localhost:0.0
+
+# Check available Qt platforms
+./pgpool-cpp -platform help
+
+# Force specific platform if needed
+./pgpool-cpp -platform xcb
+./pgpool-cpp -platform wayland
+```
+
+#### Qt Platform Issues
+```bash
+# List available Qt platforms
+./pgpool-cpp -platform help
+
+# Common platforms:
+# - xcb (X11 on Linux)
+# - wayland (Wayland on Linux)
+# - windows (Windows)
+# - cocoa (macOS)
+
+# Force platform if auto-detection fails
+./pgpool-cpp -platform xcb
+```
+
+#### Debug Output and Logging
+```bash
+# Enable Qt debug logging
+QT_LOGGING_RULES="*.debug=true" ./pgpool-cpp
+
+# Enable specific component logging
+QT_LOGGING_RULES="qt.qpa.*=true" ./pgpool-cpp
+
+# Verbose output
+./pgpool-cpp --verbose
+
+# Check Qt version and modules
+./pgpool-cpp --version
+```
+
+### Database Connection Issues
+
+#### PostgreSQL Service Status
+```bash
+# Check if PostgreSQL is running
+sudo systemctl status postgresql
+
+# Start PostgreSQL if stopped
+sudo systemctl start postgresql
+
+# Check PostgreSQL processes
+ps aux | grep postgres
+
+# Check listening ports
+sudo netstat -tlnp | grep 5432
+```
+
+#### Connection Testing
+```bash
+# Test connection with psql
+psql -h localhost -U your_username -d your_database
+
+# Test with connection string
+psql "postgresql://username:password@localhost:5432/database"
+
+# Check PostgreSQL logs
+sudo tail -f /var/log/postgresql/postgresql-*.log
+```
+
+#### Common Connection Errors
+- **Connection refused**: PostgreSQL not running or wrong port
+- **Authentication failed**: Incorrect username/password
+- **Database does not exist**: Database name typo or database not created
+- **Permission denied**: User lacks database access privileges
+
+### Application Launch Issues
+
+#### Missing Libraries
+```bash
+# Check for missing shared libraries
+ldd ./pgpool-cpp
+
+# Common missing libraries on Linux:
+# - libQt6Core.so.6
+# - libQt6Widgets.so.6
+# - libQt6Network.so.6
+# - libpqxx.so.6
+# - libpq.so.5
+
+# Install missing dependencies
+sudo apt-get install libqt6core6 libqt6widgets6 libqt6network6
+```
+
+#### Permission Issues
+```bash
+# Make executable if needed
+chmod +x ./pgpool-cpp
+
+# Check file permissions
+ls -la ./pgpool-cpp
+
+# Run with sudo if needed (not recommended for GUI apps)
+sudo ./pgpool-cpp
+```
+
+### Performance and Monitoring
+
+#### Connection Pool Testing
+```bash
+# Monitor connection pool in real-time
+# Use the "Test Pool" button in the application
+
+# Check PostgreSQL connection count
+SELECT count(*) FROM pg_stat_activity;
+
+# Monitor active connections
+SELECT pid, usename, application_name, state, query 
+FROM pg_stat_activity 
+WHERE state = 'active';
+```
+
+#### Memory and Resource Usage
+```bash
+# Monitor application memory usage
+ps aux | grep pgpool-cpp
+
+# Check for memory leaks
+valgrind --tool=memcheck --leak-check=full ./pgpool-cpp
+
+# Monitor system resources
+htop
+iotop
+```
+
+### Development and Debugging
+
+#### Building with Debug Information
+```bash
+# Configure with debug build
+cmake .. -DCMAKE_BUILD_TYPE=Debug
+
+# Build with debug symbols
+ninja
+
+# Run with GDB debugger
+gdb ./pgpool-cpp
+
+# Run with Valgrind for memory checking
+valgrind --tool=memcheck --leak-check=full ./pgpool-cpp
+```
+
+#### Qt Debugging
+```bash
+# Enable Qt debug output
+export QT_DEBUG_PLUGINS=1
+
+# Check Qt plugin paths
+./pgpool-cpp -platform xcb --verbose
+
+# Monitor Qt events
+QT_LOGGING_RULES="qt.events.*=true" ./pgpool-cpp
+```
+
+### Common Error Messages and Solutions
+
+#### "Could not connect to display"
+- **Solution**: Set `export DISPLAY=:0` or use X11 forwarding
+- **Alternative**: Run with `-platform offscreen` for headless operation
+
+#### "Qt platform plugin could not be initialized"
+- **Solution**: Install missing Qt platform plugins
+- **Alternative**: Force specific platform with `-platform xcb`
+
+#### "Connection to database failed"
+- **Solution**: Verify PostgreSQL is running and credentials are correct
+- **Check**: Database name, username, password, host, and port
+
+#### "Permission denied" errors
+- **Solution**: Check file permissions and database user privileges
+- **Alternative**: Run with appropriate user permissions
+
+### Getting Help
+
+#### Debug Information to Collect
+When reporting issues, include:
+1. **System information**: OS version, Qt version, compiler version
+2. **Build output**: CMake configuration and build logs
+3. **Runtime output**: Application logs and error messages
+4. **Environment**: Display settings, Qt platform, environment variables
+5. **Database status**: PostgreSQL version, connection test results
+
+#### Useful Commands for Diagnosis
+```bash
+# System information
+uname -a
+cat /etc/os-release
+
+# Qt information
+qmake6 --version
+qt6-config --version
+
+# Compiler information
+g++ --version
+clang++ --version
+
+# Library dependencies
+ldd ./pgpool-cpp
+
+# Environment variables
+env | grep -E "(QT|DISPLAY|PATH)"
+
+# Database connection test
+psql -h localhost -U username -d database -c "SELECT version();"
+```
+
 ## 📞 Support
 
 For questions or issues related to this project, please refer to the code comments and implementation details in the source files.
