@@ -118,7 +118,12 @@ void MainWindow::setupUI() {
    m_resultsTable->horizontalHeader()->setStretchLastSection(true);
    resultsLayout->addWidget(m_resultsTable);
    splitter->addWidget(resultsGroup);
-
+   // Button Group
+   m_connectBtn->setCheckable(true);
+   m_testPoolBtn->setCheckable(true);
+   m_refreshBtn->setCheckable(true);
+   m_insertBtn->setCheckable(true);
+   m_executeBtn->setCheckable(true);
    // Log Output
    auto* logGroup  = new QGroupBox("Log Output", this);
    auto* logLayout = new QVBoxLayout(logGroup);
@@ -339,6 +344,7 @@ void MainWindow::onTestConnectionPool() {
 void MainWindow::updateConnectionStatus(bool connected) {
    m_isConnected = connected;
    m_connectBtn->setText(connected ? "Disconnect" : "Connect");
+   m_connectBtn->setChecked(connected);
    m_executeBtn->setEnabled(connected);
    m_refreshBtn->setEnabled(connected);
    m_insertBtn->setEnabled(connected);
