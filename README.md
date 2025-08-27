@@ -15,6 +15,12 @@ A modern, feature-rich PostgreSQL database management application built with C++
 - **Modern C++**: Built with C++17 features and best practices
 - **RAII Design**: Automatic resource cleanup using RAII principles
 
+## 🖥️ Application Screenshot
+
+![PostgreSQL Connection Pool Manager](screenshots/app-screenshot.jpg)
+
+*The main interface showing database connection configuration, query execution, results display, and real-time logging*
+
 ## 🏗️ Architecture
 
 ### Core Components
