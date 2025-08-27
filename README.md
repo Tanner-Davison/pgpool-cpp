@@ -20,7 +20,9 @@ A modern, feature-rich PostgreSQL database management application built with C++
 ### Core Components
 
 #### `MainWindow` Class
+
 The main application window that provides:
+
 - Database connection configuration interface
 - Connection pool management and testing
 - Table selection and management tools
@@ -29,7 +31,9 @@ The main application window that provides:
 - Real-time connection status monitoring
 
 #### `InsertDialog` Class
+
 A dedicated dialog for data insertion that offers:
+
 - Dynamic table column detection
 - Multi-row data insertion
 - Add/remove row functionality
@@ -37,7 +41,9 @@ A dedicated dialog for data insertion that offers:
 - Bulk insert operations
 
 #### `ConnectionPool` Class
+
 The underlying connection pool manager that handles:
+
 - Connection creation and initialization
 - Connection lifecycle management
 - Thread synchronization
@@ -45,14 +51,18 @@ The underlying connection pool manager that handles:
 - Connection health monitoring
 
 #### `ConnectionHandle` Nested Class
+
 A RAII wrapper that provides:
+
 - Automatic connection return to pool on destruction
 - Move semantics for efficient resource transfer
 - Pointer-like interface (`operator*` and `operator->`)
 - Safe connection borrowing and returning
 
 #### `DatabaseManager` Class
+
 A unified interface that provides:
+
 - Connection pool management
 - Table operations (create/drop tables)
 - Query execution (SELECT operations)
@@ -60,24 +70,32 @@ A unified interface that provides:
 - Connection testing and pool statistics
 
 #### `DBOperation` Base Class
+
 Abstract base class for database operations:
+
 - Shared connection pool access
 - Common interface for all database operations
 
 #### `TableCreator` Class
+
 Handles table management operations:
+
 - Create tables with custom schemas
 - Drop existing tables
 - Inherits from `DBOperation` for pool access
 
 #### `QueryExecutor` Class
+
 Manages database queries:
+
 - Execute SELECT queries
 - Prepared statement support for safe parameterized queries
 - Inherits from `DBOperation` for pool access
 
 #### `DataModifier` Class
+
 Handles data modification operations:
+
 - INSERT operations with column-value pairs
 - UPDATE operations with WHERE conditions
 - Inherits from `DBOperation` for pool access
@@ -129,6 +147,7 @@ pgpool-cpp/
 - **Compiler**: C++17 compatible compiler (GCC 7+, Clang 5+, MSVC 2017+)
 - **Build System**: CMake 3.20+
 - **Dependencies**:
+  changing something
   - Qt6 (Core, Widgets, Network, Sql components)
   - libpqxx (PostgreSQL C++ client library)
   - PostgreSQL development headers
@@ -139,6 +158,7 @@ pgpool-cpp/
 ### Prerequisites Setup
 
 #### Linux (Ubuntu/Debian)
+
 ```bash
 # Run the setup script
 chmod +x setup-qt.sh
@@ -146,11 +166,13 @@ chmod +x setup-qt.sh
 ```
 
 #### Windows
+
 1. Install Qt6 via Qt installer or vcpkg
 2. Install vcpkg and libpqxx
 3. Ensure MinGW or MSVC compiler is available
 
 #### macOS
+
 ```bash
 # Install Qt6 via Homebrew
 brew install qt6
@@ -178,6 +200,7 @@ cmake --build . --config Release
 ### CMake Configuration
 
 The project automatically detects your platform and configures vcpkg paths:
+
 - **Windows**: Uses `x64-mingw-dynamic` triplet
 - **Linux**: Uses `x64-linux` triplet
 - **Qt6 Integration**: Automatic MOC, RCC, and UIC processing
@@ -198,6 +221,7 @@ PgPool Manager provides an intuitive interface for PostgreSQL database managemen
 ### Main Window Features
 
 #### Database Connection
+
 - **Host**: Database server address (default: localhost)
 - **Port**: Database port (default: 5432)
 - **Database**: Target database name
@@ -206,6 +230,7 @@ PgPool Manager provides an intuitive interface for PostgreSQL database managemen
 - **Pool Size**: Connection pool configuration
 
 #### Database Operations
+
 - **Connect**: Establish database connection
 - **Test Pool**: Verify connection pool functionality
 - **Refresh Tables**: Update table list
@@ -213,6 +238,7 @@ PgPool Manager provides an intuitive interface for PostgreSQL database managemen
 - **Insert Data**: Open data insertion dialog
 
 #### Results Display
+
 - **Query Results**: Tabular display of query results
 - **Log Output**: Real-time operation logging
 - **Status Bar**: Connection and operation status
@@ -295,6 +321,7 @@ The application includes comprehensive testing capabilities:
 ## 🚨 Error Handling
 
 The implementation includes robust error handling:
+
 - **Exception Safety**: Strong exception guarantee for all operations
 - **Resource Cleanup**: Automatic cleanup even in error conditions
 - **Graceful Degradation**: Pool continues operating after individual connection failures
@@ -306,6 +333,7 @@ The implementation includes robust error handling:
 ## 🔮 Future Enhancements
 
 Potential improvements for future versions:
+
 - **Advanced Query Builder**: Visual query construction interface
 - **Data Export/Import**: CSV, JSON, and other format support
 - **Schema Visualization**: Database structure diagrams
@@ -351,6 +379,7 @@ This is a personal project, but suggestions and improvements are welcome. Please
 ### Debug Information
 
 The application provides comprehensive debugging information:
+
 - Connection pool size on startup
 - Active connection counts
 - Total connection counts
