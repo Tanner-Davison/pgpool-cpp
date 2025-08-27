@@ -1,28 +1,48 @@
-# C++ PostgreSQL Connection Pool
+# PgPool Manager - Qt6 PostgreSQL Database Management Application
 
-A high-performance, thread-safe connection pool implementation for PostgreSQL using C++17 and libpqxx. This project provides efficient database connection management with automatic connection lifecycle handling, RAII-based resource management, and a comprehensive database operations interface.
+A modern, feature-rich PostgreSQL database management application built with C++17, Qt6, and libpqxx. This project provides an intuitive graphical interface for database operations, connection pool management, and comprehensive database administration tools.
 
 ## 🚀 Features
 
-- **Thread-Safe**: Full mutex protection with condition variables for concurrent access
-- **RAII Design**: Automatic connection cleanup using RAII principles
-- **Connection Pooling**: Configurable minimum and maximum connection limits
-- **Smart Resource Management**: Uses `std::unique_ptr` and move semantics
-- **Performance Optimized**: Efficient connection reuse and minimal overhead
+- **Modern Qt6 GUI**: Clean, responsive user interface built with Qt6
+- **Database Connection Management**: Easy connection setup with configurable parameters
+- **Connection Pooling**: High-performance, thread-safe connection pool with automatic lifecycle management
+- **Table Management**: Create, drop, and manage database tables through the GUI
+- **Data Operations**: Insert, update, and query data with visual feedback
+- **Query Execution**: Execute custom SQL queries with result display
+- **Connection Pool Testing**: Built-in tools to test and monitor connection pool performance
+- **Cross-Platform**: Runs on Windows, Linux, and macOS
 - **Modern C++**: Built with C++17 features and best practices
-- **Comprehensive Database Operations**: Table creation, data modification, and query execution
-- **Unified Database Interface**: Single `DatabaseManager` class for all database operations
+- **RAII Design**: Automatic resource cleanup using RAII principles
 
 ## 🏗️ Architecture
 
 ### Core Components
 
+#### `MainWindow` Class
+The main application window that provides:
+- Database connection configuration interface
+- Connection pool management and testing
+- Table selection and management tools
+- Query execution interface
+- Data insertion dialog integration
+- Real-time connection status monitoring
+
+#### `InsertDialog` Class
+A dedicated dialog for data insertion that offers:
+- Dynamic table column detection
+- Multi-row data insertion
+- Add/remove row functionality
+- Type-aware data input
+- Bulk insert operations
+
 #### `ConnectionPool` Class
-The main connection pool manager that handles:
+The underlying connection pool manager that handles:
 - Connection creation and initialization
 - Connection lifecycle management
 - Thread synchronization
 - Pool size configuration
+- Connection health monitoring
 
 #### `ConnectionHandle` Nested Class
 A RAII wrapper that provides:
@@ -64,36 +84,44 @@ Handles data modification operations:
 
 ### Design Patterns
 
+- **Model-View-Controller (MVC)**: Clean separation between UI, data, and business logic
 - **RAII (Resource Acquisition Is Initialization)**: Connections are automatically returned when handles go out of scope
 - **Factory Pattern**: Connection creation is abstracted through the pool
 - **RAII with Move Semantics**: Efficient resource transfer without copying
 - **Thread-Safe Singleton Pattern**: Single pool instance with thread-safe access
 - **Inheritance Hierarchy**: Clean separation of concerns with `DBOperation` base class
 - **Composition**: `DatabaseManager` composes all operation classes
+- **Signal-Slot Pattern**: Qt's event-driven architecture for UI interactions
 
 ## 📁 Project Structure
 
 ```
 pgpool-cpp/
 ├── include/
-│   ├── ConnectionPool.hpp      # Connection pool class declarations
-│   ├── DatabaseManager.hpp     # Main database interface
+│   ├── MainWindow.hpp         # Main application window
+│   ├── InsertDialog.hpp       # Data insertion dialog
+│   ├── ConnectionPool.hpp     # Connection pool class declarations
+│   ├── DatabaseManager.hpp    # Main database interface
 │   ├── DBOperation.hpp        # Base class for database operations
 │   ├── TableCreator.hpp       # Table management operations
 │   ├── QueryExecutor.hpp      # Query execution operations
 │   └── DataModifier.hpp       # Data modification operations
 ├── src/
-│   ├── ConnectionPool.cpp      # Connection pool implementation
-│   ├── DatabaseManager.cpp     # Database manager implementation
+│   ├── main.cpp               # Application entry point
+│   ├── MainWindow.cpp         # Main window implementation
+│   ├── InsertDialog.cpp       # Insert dialog implementation
+│   ├── ConnectionPool.cpp     # Connection pool implementation
+│   ├── DatabaseManager.cpp    # Database manager implementation
 │   ├── DBOperation.hpp        # Base class implementation
-│   ├── TableCreator.cpp        # Table operations implementation
-│   ├── QueryExecutor.cpp       # Query execution implementation
-│   ├── DataModifier.cpp        # Data modification implementation
-│   └── main.cpp               # Example usage and testing
-├── CMakeLists.txt             # Build configuration
-├── .clang-format              # Code formatting rules
-├── .gitignore                 # Git ignore patterns
-└── README.md                  # This documentation
+│   ├── TableCreator.cpp       # Table operations implementation
+│   ├── QueryExecutor.cpp      # Query execution implementation
+│   └── DataModifier.cpp       # Data modification implementation
+├── build/                     # Build artifacts and CMake files
+├── CMakeLists.txt            # Build configuration
+├── setup-qt.sh               # Qt6 setup script for Linux
+├── .clang-format             # Code formatting rules
+├── .gitignore                # Git ignore patterns
+└── README.md                 # This documentation
 ```
 
 ## 🔧 Prerequisites
@@ -101,13 +129,37 @@ pgpool-cpp/
 - **Compiler**: C++17 compatible compiler (GCC 7+, Clang 5+, MSVC 2017+)
 - **Build System**: CMake 3.20+
 - **Dependencies**:
+  - Qt6 (Core, Widgets, Network, Sql components)
   - libpqxx (PostgreSQL C++ client library)
   - PostgreSQL development headers
 - **Platform**: Cross-platform (Windows, Linux, macOS)
 
 ## 🛠️ Building the Project
 
-### Using CMake
+### Prerequisites Setup
+
+#### Linux (Ubuntu/Debian)
+```bash
+# Run the setup script
+chmod +x setup-qt.sh
+./setup-qt.sh
+```
+
+#### Windows
+1. Install Qt6 via Qt installer or vcpkg
+2. Install vcpkg and libpqxx
+3. Ensure MinGW or MSVC compiler is available
+
+#### macOS
+```bash
+# Install Qt6 via Homebrew
+brew install qt6
+
+# Install vcpkg and libpqxx
+# Follow similar steps as Linux
+```
+
+### Building with CMake
 
 ```bash
 # Create build directory
@@ -119,7 +171,7 @@ cmake .. -DCMAKE_BUILD_TYPE=Release
 # Build the project
 cmake --build . --config Release
 
-# Run the executable
+# Run the application
 ./pgpool-cpp
 ```
 
@@ -128,151 +180,62 @@ cmake --build . --config Release
 The project automatically detects your platform and configures vcpkg paths:
 - **Windows**: Uses `x64-mingw-dynamic` triplet
 - **Linux**: Uses `x64-linux` triplet
+- **Qt6 Integration**: Automatic MOC, RCC, and UIC processing
 
-## 📖 Usage Examples
+## 📖 Usage Guide
 
-### Basic Database Manager Usage
+### Application Overview
 
-```cpp
-#include "DatabaseManager.hpp"
-#include <iostream>
+PgPool Manager provides an intuitive interface for PostgreSQL database management:
 
-int main() {
-    std::cout << "Enter Password: ";
-    std::string password;
-    std::getline(std::cin, password);
+1. **Connection Setup**: Configure database connection parameters
+2. **Connection Testing**: Verify connectivity and pool functionality
+3. **Table Management**: Create and manage database tables
+4. **Data Operations**: Insert, query, and modify data
+5. **Query Execution**: Run custom SQL queries
+6. **Pool Monitoring**: Monitor connection pool performance
 
-    try {
-        // Create database manager with custom configuration
-        DatabaseManager db(password, "localhost", "mydb", "myuser", 2, 10);
-        
-        // Test the connection
-        db.testConnection();
-        
-        // Print pool statistics
-        db.printPoolStats();
-        
-    } catch (const std::exception& e) {
-        std::cerr << "Fatal error: " << e.what() << std::endl;
-        return 1;
-    }
-    
-    return 0;
-}
-```
+### Main Window Features
 
-### Table Management
+#### Database Connection
+- **Host**: Database server address (default: localhost)
+- **Port**: Database port (default: 5432)
+- **Database**: Target database name
+- **Username**: Database user credentials
+- **Password**: Secure password input
+- **Pool Size**: Connection pool configuration
 
-```cpp
-#include "DatabaseManager.hpp"
+#### Database Operations
+- **Connect**: Establish database connection
+- **Test Pool**: Verify connection pool functionality
+- **Refresh Tables**: Update table list
+- **Execute Query**: Run custom SQL queries
+- **Insert Data**: Open data insertion dialog
 
-void manageTables(DatabaseManager& db) {
-    // Create a new table
-    db.tables().createTable("users",
-        "id SERIAL PRIMARY KEY, "
-        "username VARCHAR(50) NOT NULL, "
-        "email VARCHAR(100), "
-        "created_at TIMESTAMP DEFAULT NOW()");
-    
-    // Drop a table if needed
-    // db.tables().dropTable("old_table");
-}
-```
+#### Results Display
+- **Query Results**: Tabular display of query results
+- **Log Output**: Real-time operation logging
+- **Status Bar**: Connection and operation status
 
-### Data Operations
+### Data Insertion Dialog
 
-```cpp
-#include "DatabaseManager.hpp"
+The Insert Dialog provides a user-friendly way to insert data:
 
-void performDataOperations(DatabaseManager& db) {
-    // Insert data
-    int user_id = db.data().insert("users", 
-        {"username", "email"}, 
-        {"john_doe", "john@example.com"});
-    
-    std::cout << "Inserted user with ID: " << user_id << std::endl;
-    
-    // Update data
-    size_t updated_rows = db.data().update("users", 
-        "email", "newemail@example.com",
-        "username", "john_doe");
-    
-    std::cout << "Updated " << updated_rows << " rows" << std::endl;
-}
-```
+1. **Table Selection**: Choose target table from dropdown
+2. **Column Detection**: Automatic column and type detection
+3. **Data Input**: Type-aware input fields
+4. **Row Management**: Add/remove rows for bulk operations
+5. **Insert Execution**: Execute insert operations with feedback
 
-### Query Execution
+### Example Workflow
 
-```cpp
-#include "DatabaseManager.hpp"
-
-void executeQueries(DatabaseManager& db) {
-    // Simple SELECT query
-    auto result = db.query().select("SELECT * FROM users");
-    
-    for (const auto& row : result) {
-        std::cout << "User: " << row["username"].as<std::string>() 
-                  << " - " << row["email"].as<std::string>() << std::endl;
-    }
-    
-    // Prepared statement for safe parameterized queries
-    auto filtered_result = db.query().selectPrepared("users", "username", "john_doe");
-    
-    for (const auto& row : filtered_result) {
-        std::cout << "Found user: " << row["email"].as<std::string>() << std::endl;
-    }
-}
-```
-
-### Complete Working Example
-
-```cpp
-#include "DatabaseManager.hpp"
-#include <iostream>
-
-int main() {
-    std::cout << "Enter Password: ";
-    std::string password;
-    std::getline(std::cin, password);
-
-    if (password.empty()) {
-        std::cerr << "Password cannot be empty" << std::endl;
-        return 1;
-    }
-
-    try {
-        DatabaseManager db(password);
-        
-        // Create a table
-        db.tables().createTable("users",
-            "id SERIAL PRIMARY KEY, "
-            "username VARCHAR(50) NOT NULL, "
-            "email VARCHAR(100), "
-            "created_at TIMESTAMP DEFAULT NOW()");
-
-        // Insert data
-        int user_id = db.data().insert("users", 
-            {"username", "email"}, 
-            {"john_doe", "john@example.com"});
-        std::cout << "Inserted user with ID: " << user_id << std::endl;
-
-        // Query data
-        auto result = db.query().select("SELECT * FROM users");
-        for (const auto& row : result) {
-            std::cout << "User: " << row["username"].as<std::string>() 
-                      << " - " << row["email"].as<std::string>() << std::endl;
-        }
-        
-        // Show pool statistics
-        db.printPoolStats();
-
-    } catch (const std::exception& e) {
-        std::cerr << "Fatal error: " << e.what() << std::endl;
-    }
-    
-    return 0;
-}
-```
+1. **Launch Application**: Start PgPool Manager
+2. **Configure Connection**: Enter database credentials
+3. **Test Connection**: Verify connectivity
+4. **Create Table**: Use table management tools
+5. **Insert Data**: Use the Insert Dialog
+6. **Query Data**: Execute SELECT queries
+7. **Monitor Pool**: Check connection pool status
 
 ## 🔒 Thread Safety
 
@@ -282,37 +245,7 @@ The connection pool is fully thread-safe and supports concurrent access:
 - **Condition Variables**: Efficient waiting for available connections
 - **Atomic Operations**: Safe connection counting and state management
 - **RAII Guarantees**: No race conditions during connection return
-
-### Concurrent Usage Example
-
-```cpp
-#include <thread>
-#include <vector>
-
-void workerThread(DatabaseManager& db, int threadId) {
-    for (int i = 0; i < 100; ++i) {
-        // Each operation gets its own connection from the pool
-        auto result = db.query().select("SELECT COUNT(*) FROM users");
-        std::cout << "Thread " << threadId << " count: " 
-                  << result[0][0].as<int>() << std::endl;
-    }
-}
-
-int main() {
-    DatabaseManager db("password", "localhost", "mydb", "user", 10, 50);
-    
-    std::vector<std::thread> threads;
-    for (int i = 0; i < 5; ++i) {
-        threads.emplace_back(workerThread, std::ref(db), i);
-    }
-    
-    for (auto& t : threads) {
-        t.join();
-    }
-    
-    return 0;
-}
-```
+- **Qt Thread Safety**: UI operations are properly synchronized
 
 ## 📊 Performance Characteristics
 
@@ -321,18 +254,27 @@ int main() {
 - **Scalable**: Handles hundreds of concurrent requests efficiently
 - **Memory Efficient**: Uses smart pointers for automatic cleanup
 - **Optimized Queries**: Prepared statements and parameterized queries for security and performance
+- **Responsive UI**: Non-blocking database operations with progress feedback
 
 ## 🧪 Testing and Validation
 
-The project includes a comprehensive test harness in `main.cpp` that demonstrates:
-- Database connection and pool initialization
-- Table creation and management
-- Data insertion and modification
-- Query execution and result processing
-- Pool statistics and monitoring
-- RAII behavior verification
+The application includes comprehensive testing capabilities:
+
+- **Connection Testing**: Verify database connectivity
+- **Pool Testing**: Test connection pool functionality
+- **Table Operations**: Validate table creation and management
+- **Data Operations**: Test insert, query, and update operations
+- **Query Execution**: Validate custom SQL execution
+- **Error Handling**: Comprehensive error handling and user feedback
 
 ## 🔍 Key Implementation Details
+
+### Qt6 Integration
+
+- **MOC Processing**: Automatic meta-object compilation
+- **Signal-Slot Connections**: Event-driven architecture
+- **Widget Management**: Dynamic UI creation and management
+- **Cross-Platform**: Native look and feel on all platforms
 
 ### Connection Lifecycle
 
@@ -348,18 +290,7 @@ The project includes a comprehensive test harness in `main.cpp` that demonstrate
 - **Move Semantics**: Efficient resource transfer without copying
 - **RAII Guarantees**: Automatic cleanup on scope exit
 - **No Memory Leaks**: All resources properly managed
-
-### Database Operation Hierarchy
-
-```
-DatabaseManager
-├── ConnectionPool (shared_ptr)
-├── TableCreator (unique_ptr)
-├── QueryExecutor (unique_ptr)
-└── DataModifier (unique_ptr)
-```
-
-Each operation class inherits from `DBOperation` and shares access to the connection pool, ensuring consistent resource management across all database operations.
+- **Qt Object Hierarchy**: Proper parent-child relationships
 
 ## 🚨 Error Handling
 
@@ -369,19 +300,22 @@ The implementation includes robust error handling:
 - **Graceful Degradation**: Pool continues operating after individual connection failures
 - **SQL Error Handling**: Specific handling for PostgreSQL errors
 - **Input Validation**: Parameter validation for all public methods
+- **User Feedback**: Clear error messages and status updates
+- **Logging**: Comprehensive operation logging for debugging
 
 ## 🔮 Future Enhancements
 
 Potential improvements for future versions:
-- Connection health checking and validation
-- Configurable connection timeouts
-- Connection load balancing
-- Metrics and monitoring
-- Connection encryption support
-- Connection pooling strategies (LRU, FIFO, etc.)
-- Transaction management utilities
-- Batch operation support
-- Connection pool configuration file support
+- **Advanced Query Builder**: Visual query construction interface
+- **Data Export/Import**: CSV, JSON, and other format support
+- **Schema Visualization**: Database structure diagrams
+- **Performance Monitoring**: Real-time performance metrics
+- **Backup/Restore**: Database backup and restoration tools
+- **User Management**: Role-based access control
+- **Plugin System**: Extensible architecture for custom functionality
+- **Dark Mode**: Theme customization options
+- **Keyboard Shortcuts**: Power user productivity features
+- **Multi-Database Support**: Connection to multiple databases simultaneously
 
 ## 📝 License
 
@@ -393,6 +327,11 @@ This is a personal project, but suggestions and improvements are welcome. Please
 
 ## 📚 Dependencies
 
+- **Qt6**: Modern C++ application framework
+  - Core: Core non-GUI functionality
+  - Widgets: GUI components
+  - Network: Network operations
+  - Sql: Database connectivity
 - **libpqxx**: PostgreSQL C++ client library
 - **Standard C++ Library**: C++17 features and containers
 - **CMake**: Build system and dependency management
@@ -401,22 +340,42 @@ This is a personal project, but suggestions and improvements are welcome. Please
 
 ### Common Issues
 
-1. **Connection Failures**: Verify PostgreSQL is running and credentials are correct
-2. **Build Errors**: Ensure C++17 compiler and libpqxx are properly installed
-3. **Runtime Errors**: Check connection string format and database accessibility
-4. **Table Creation Errors**: Verify database permissions and schema syntax
-5. **Query Execution Errors**: Check SQL syntax and table existence
+1. **Qt6 Not Found**: Ensure Qt6 is properly installed and CMake can locate it
+2. **Connection Failures**: Verify PostgreSQL is running and credentials are correct
+3. **Build Errors**: Ensure C++17 compiler and all dependencies are properly installed
+4. **Runtime Errors**: Check connection string format and database accessibility
+5. **Table Creation Errors**: Verify database permissions and schema syntax
+6. **Query Execution Errors**: Check SQL syntax and table existence
+7. **UI Rendering Issues**: Verify Qt6 installation and graphics drivers
 
 ### Debug Information
 
-The pool provides debugging information during initialization and operation:
+The application provides comprehensive debugging information:
 - Connection pool size on startup
 - Active connection counts
 - Total connection counts
 - Table creation/drop confirmations
 - Query result row counts
+- Real-time operation logging
+- Connection status monitoring
+
+### Platform-Specific Notes
+
+- **Linux**: Ensure proper Qt6 installation and graphics drivers
+- **Windows**: Verify MinGW/MSVC compatibility and Qt6 paths
+- **macOS**: Check Homebrew Qt6 installation and permissions
 
 ## 📞 Support
 
 For questions or issues related to this project, please refer to the code comments and implementation details in the source files.
-Contact: tanner.davison95@gmail.com
+
+**Contact**: tanner.davison95@gmail.com
+
+## 🚀 Quick Start
+
+1. **Clone the repository**
+2. **Run setup script** (Linux): `./setup-qt.sh`
+3. **Build the project**: `mkdir build && cd build && cmake .. && make`
+4. **Launch the application**: `./pgpool-cpp`
+5. **Configure your database connection**
+6. **Start managing your PostgreSQL databases!**
