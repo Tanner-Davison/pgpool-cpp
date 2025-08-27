@@ -4,10 +4,14 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated-declarations")
 if(WIN32)
     set(VCPKG_TARGET_TRIPLET "x64-mingw-dynamic" CACHE STRING "")
     set(CMAKE_TOOLCHAIN_FILE "F:/tools/vcpkg/scripts/buildsystems/vcpkg.cmake")
+elseif(APPLE)
+    set(VCPKG_TARGET_TRIPLET "arm64-osx" CACHE STRING "")  # Changed from x64-osx
+    set(CMAKE_TOOLCHAIN_FILE "$ENV{HOME}/tools/vcpkg/scripts/buildsystems/vcpkg.cmake")
 else()
     set(VCPKG_TARGET_TRIPLET "x64-linux" CACHE STRING "")
     set(CMAKE_TOOLCHAIN_FILE "$ENV{HOME}/tools/vcpkg/scripts/buildsystems/vcpkg.cmake")
 endif()
+
 
 # Now declare project
 project(pgpool-cpp)
@@ -23,7 +27,8 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
 # Find required packages
-find_package(libpqxx CONFIG REQUIRED)
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(LIBPQXX REQUIRED libpqxx)
 find_package(Qt6 REQUIRED COMPONENTS Core Widgets Network Sql)
 
 # Source files
@@ -62,13 +67,15 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 # Link libraries
 target_link_libraries(${PROJECT_NAME} 
     PRIVATE 
-        libpqxx::pqxx
+        ${LIBPQXX_LIBRARIES}
         Qt6::Core
         Qt6::Widgets
         Qt6::Network
         Qt6::Sql
 )
-
+target_include_directories(${PROJECT_NAME} PRIVATE ${LIBPQXX_INCLUDE_DIRS})
+target_compile_options(${PROJECT_NAME} PRIVATE ${LIBPQXX_CFLAGS_OTHER})
+target_link_directories(${PROJECT_NAME} PRIVATE ${LIBPQXX_LIBRARY_DIRS}) 
 # Qt deployment helpers for Linux
 if(UNIX AND NOT APPLE)
     # Set RPATH for the executable
