@@ -1,6 +1,6 @@
 # C++ PostgreSQL Connection Pool
 
-A high-performance, thread-safe connection pool implementation for PostgreSQL using C++17 and libpqxx. This project provides efficient database connection management with automatic connection lifecycle handling and RAII-based resource management.
+A high-performance, thread-safe connection pool implementation for PostgreSQL using C++17 and libpqxx. This project provides efficient database connection management with automatic connection lifecycle handling, RAII-based resource management, and a comprehensive database operations interface.
 
 ## 🚀 Features
 
@@ -10,6 +10,8 @@ A high-performance, thread-safe connection pool implementation for PostgreSQL us
 - **Smart Resource Management**: Uses `std::unique_ptr` and move semantics
 - **Performance Optimized**: Efficient connection reuse and minimal overhead
 - **Modern C++**: Built with C++17 features and best practices
+- **Comprehensive Database Operations**: Table creation, data modification, and query execution
+- **Unified Database Interface**: Single `DatabaseManager` class for all database operations
 
 ## 🏗️ Architecture
 
@@ -29,21 +31,64 @@ A RAII wrapper that provides:
 - Pointer-like interface (`operator*` and `operator->`)
 - Safe connection borrowing and returning
 
+#### `DatabaseManager` Class
+A unified interface that provides:
+- Connection pool management
+- Table operations (create/drop tables)
+- Query execution (SELECT operations)
+- Data modification (INSERT/UPDATE operations)
+- Connection testing and pool statistics
+
+#### `DBOperation` Base Class
+Abstract base class for database operations:
+- Shared connection pool access
+- Common interface for all database operations
+
+#### `TableCreator` Class
+Handles table management operations:
+- Create tables with custom schemas
+- Drop existing tables
+- Inherits from `DBOperation` for pool access
+
+#### `QueryExecutor` Class
+Manages database queries:
+- Execute SELECT queries
+- Prepared statement support for safe parameterized queries
+- Inherits from `DBOperation` for pool access
+
+#### `DataModifier` Class
+Handles data modification operations:
+- INSERT operations with column-value pairs
+- UPDATE operations with WHERE conditions
+- Inherits from `DBOperation` for pool access
+
 ### Design Patterns
 
 - **RAII (Resource Acquisition Is Initialization)**: Connections are automatically returned when handles go out of scope
 - **Factory Pattern**: Connection creation is abstracted through the pool
 - **RAII with Move Semantics**: Efficient resource transfer without copying
 - **Thread-Safe Singleton Pattern**: Single pool instance with thread-safe access
+- **Inheritance Hierarchy**: Clean separation of concerns with `DBOperation` base class
+- **Composition**: `DatabaseManager` composes all operation classes
 
 ## 📁 Project Structure
 
 ```
-cpp-postgres/
+pgpool-cpp/
 ├── include/
-│   └── ConnectionPool.hpp      # Header file with class declarations
+│   ├── ConnectionPool.hpp      # Connection pool class declarations
+│   ├── DatabaseManager.hpp     # Main database interface
+│   ├── DBOperation.hpp        # Base class for database operations
+│   ├── TableCreator.hpp       # Table management operations
+│   ├── QueryExecutor.hpp      # Query execution operations
+│   └── DataModifier.hpp       # Data modification operations
 ├── src/
-│   ├── ConnectionPool.cpp      # Implementation of connection pool logic
+│   ├── ConnectionPool.cpp      # Connection pool implementation
+│   ├── DatabaseManager.cpp     # Database manager implementation
+│   ├── DBOperation.hpp        # Base class implementation
+│   ├── TableCreator.cpp        # Table operations implementation
+│   ├── QueryExecutor.cpp       # Query execution implementation
+│   ├── DataModifier.cpp        # Data modification implementation
 │   └── main.cpp               # Example usage and testing
 ├── CMakeLists.txt             # Build configuration
 ├── .clang-format              # Code formatting rules
@@ -75,7 +120,7 @@ cmake .. -DCMAKE_BUILD_TYPE=Release
 cmake --build . --config Release
 
 # Run the executable
-./cpp-postgres
+./pgpool-cpp
 ```
 
 ### CMake Configuration
@@ -86,61 +131,146 @@ The project automatically detects your platform and configures vcpkg paths:
 
 ## 📖 Usage Examples
 
-### Basic Connection Pool Usage
+### Basic Database Manager Usage
 
 ```cpp
-#include "ConnectionPool.hpp"
+#include "DatabaseManager.hpp"
 #include <iostream>
 
 int main() {
-    // Create connection pool with custom limits
-    std::string conn_str = "host=localhost port=5432 dbname=mydb user=myuser password=mypass";
-    ConnectionPool pool(conn_str, 5, 20); // min: 5, max: 20 connections
-    
-    // Get a connection from the pool
-    {
-        auto conn = pool.getConnection();
+    std::cout << "Enter Password: ";
+    std::string password;
+    std::getline(std::cin, password);
+
+    try {
+        // Create database manager with custom configuration
+        DatabaseManager db(password, "localhost", "mydb", "myuser", 2, 10);
         
-        // Use the connection (RAII ensures it's returned to pool)
-        std::cout << "Active connections: " << pool.activeConnections() << std::endl;
-        std::cout << "Total connections: " << pool.totalConnections() << std::endl;
+        // Test the connection
+        db.testConnection();
         
-        // Connection automatically returned when 'conn' goes out of scope
+        // Print pool statistics
+        db.printPoolStats();
+        
+    } catch (const std::exception& e) {
+        std::cerr << "Fatal error: " << e.what() << std::endl;
+        return 1;
     }
     
     return 0;
 }
 ```
 
-### Advanced Usage with Transactions
+### Table Management
 
 ```cpp
-#include "ConnectionPool.hpp"
-#include <pqxx/pqxx>
+#include "DatabaseManager.hpp"
 
-void performDatabaseOperation(ConnectionPool& pool) {
-    auto conn = pool.getConnection();
+void manageTables(DatabaseManager& db) {
+    // Create a new table
+    db.tables().createTable("users",
+        "id SERIAL PRIMARY KEY, "
+        "username VARCHAR(50) NOT NULL, "
+        "email VARCHAR(100), "
+        "created_at TIMESTAMP DEFAULT NOW()");
     
-    try {
-        // Begin transaction
-        pqxx::work txn(*conn);
-        
-        // Execute queries
-        auto result = txn.exec("SELECT * FROM users WHERE active = true");
-        
-        // Process results
-        for (const auto& row : result) {
-            std::cout << "User: " << row[0].as<std::string>() << std::endl;
-        }
-        
-        // Commit transaction
-        txn.commit();
-        
-    } catch (const std::exception& e) {
-        std::cerr << "Database error: " << e.what() << std::endl;
+    // Drop a table if needed
+    // db.tables().dropTable("old_table");
+}
+```
+
+### Data Operations
+
+```cpp
+#include "DatabaseManager.hpp"
+
+void performDataOperations(DatabaseManager& db) {
+    // Insert data
+    int user_id = db.data().insert("users", 
+        {"username", "email"}, 
+        {"john_doe", "john@example.com"});
+    
+    std::cout << "Inserted user with ID: " << user_id << std::endl;
+    
+    // Update data
+    size_t updated_rows = db.data().update("users", 
+        "email", "newemail@example.com",
+        "username", "john_doe");
+    
+    std::cout << "Updated " << updated_rows << " rows" << std::endl;
+}
+```
+
+### Query Execution
+
+```cpp
+#include "DatabaseManager.hpp"
+
+void executeQueries(DatabaseManager& db) {
+    // Simple SELECT query
+    auto result = db.query().select("SELECT * FROM users");
+    
+    for (const auto& row : result) {
+        std::cout << "User: " << row["username"].as<std::string>() 
+                  << " - " << row["email"].as<std::string>() << std::endl;
     }
     
-    // Connection automatically returned to pool
+    // Prepared statement for safe parameterized queries
+    auto filtered_result = db.query().selectPrepared("users", "username", "john_doe");
+    
+    for (const auto& row : filtered_result) {
+        std::cout << "Found user: " << row["email"].as<std::string>() << std::endl;
+    }
+}
+```
+
+### Complete Working Example
+
+```cpp
+#include "DatabaseManager.hpp"
+#include <iostream>
+
+int main() {
+    std::cout << "Enter Password: ";
+    std::string password;
+    std::getline(std::cin, password);
+
+    if (password.empty()) {
+        std::cerr << "Password cannot be empty" << std::endl;
+        return 1;
+    }
+
+    try {
+        DatabaseManager db(password);
+        
+        // Create a table
+        db.tables().createTable("users",
+            "id SERIAL PRIMARY KEY, "
+            "username VARCHAR(50) NOT NULL, "
+            "email VARCHAR(100), "
+            "created_at TIMESTAMP DEFAULT NOW()");
+
+        // Insert data
+        int user_id = db.data().insert("users", 
+            {"username", "email"}, 
+            {"john_doe", "john@example.com"});
+        std::cout << "Inserted user with ID: " << user_id << std::endl;
+
+        // Query data
+        auto result = db.query().select("SELECT * FROM users");
+        for (const auto& row : result) {
+            std::cout << "User: " << row["username"].as<std::string>() 
+                      << " - " << row["email"].as<std::string>() << std::endl;
+        }
+        
+        // Show pool statistics
+        db.printPoolStats();
+
+    } catch (const std::exception& e) {
+        std::cerr << "Fatal error: " << e.what() << std::endl;
+    }
+    
+    return 0;
 }
 ```
 
@@ -159,23 +289,21 @@ The connection pool is fully thread-safe and supports concurrent access:
 #include <thread>
 #include <vector>
 
-void workerThread(ConnectionPool& pool, int threadId) {
+void workerThread(DatabaseManager& db, int threadId) {
     for (int i = 0; i < 100; ++i) {
-        auto conn = pool.getConnection();
-        
-        // Simulate database work
-        std::this_thread::sleep_for(std::chrono::milliseconds(10));
-        
-        // Connection automatically returned
+        // Each operation gets its own connection from the pool
+        auto result = db.query().select("SELECT COUNT(*) FROM users");
+        std::cout << "Thread " << threadId << " count: " 
+                  << result[0][0].as<int>() << std::endl;
     }
 }
 
 int main() {
-    ConnectionPool pool("your_connection_string", 10, 50);
+    DatabaseManager db("password", "localhost", "mydb", "user", 10, 50);
     
     std::vector<std::thread> threads;
     for (int i = 0; i < 5; ++i) {
-        threads.emplace_back(workerThread, std::ref(pool), i);
+        threads.emplace_back(workerThread, std::ref(db), i);
     }
     
     for (auto& t : threads) {
@@ -192,13 +320,16 @@ int main() {
 - **Minimal Overhead**: Low memory and CPU overhead per connection
 - **Scalable**: Handles hundreds of concurrent requests efficiently
 - **Memory Efficient**: Uses smart pointers for automatic cleanup
+- **Optimized Queries**: Prepared statements and parameterized queries for security and performance
 
 ## 🧪 Testing and Validation
 
-The project includes a simple test harness in `main.cpp` that demonstrates:
-- Pool initialization
-- Connection acquisition and return
-- Active/total connection counting
+The project includes a comprehensive test harness in `main.cpp` that demonstrates:
+- Database connection and pool initialization
+- Table creation and management
+- Data insertion and modification
+- Query execution and result processing
+- Pool statistics and monitoring
 - RAII behavior verification
 
 ## 🔍 Key Implementation Details
@@ -218,12 +349,26 @@ The project includes a simple test harness in `main.cpp` that demonstrates:
 - **RAII Guarantees**: Automatic cleanup on scope exit
 - **No Memory Leaks**: All resources properly managed
 
+### Database Operation Hierarchy
+
+```
+DatabaseManager
+├── ConnectionPool (shared_ptr)
+├── TableCreator (unique_ptr)
+├── QueryExecutor (unique_ptr)
+└── DataModifier (unique_ptr)
+```
+
+Each operation class inherits from `DBOperation` and shares access to the connection pool, ensuring consistent resource management across all database operations.
+
 ## 🚨 Error Handling
 
 The implementation includes robust error handling:
 - **Exception Safety**: Strong exception guarantee for all operations
 - **Resource Cleanup**: Automatic cleanup even in error conditions
 - **Graceful Degradation**: Pool continues operating after individual connection failures
+- **SQL Error Handling**: Specific handling for PostgreSQL errors
+- **Input Validation**: Parameter validation for all public methods
 
 ## 🔮 Future Enhancements
 
@@ -234,10 +379,13 @@ Potential improvements for future versions:
 - Metrics and monitoring
 - Connection encryption support
 - Connection pooling strategies (LRU, FIFO, etc.)
+- Transaction management utilities
+- Batch operation support
+- Connection pool configuration file support
 
 ## 📝 License
 
-(C) 2025 Tanner Davidson. All Rights Reserved.
+(C) 2025 Tanner Davison. All Rights Reserved.
 
 ## 🤝 Contributing
 
@@ -256,6 +404,8 @@ This is a personal project, but suggestions and improvements are welcome. Please
 1. **Connection Failures**: Verify PostgreSQL is running and credentials are correct
 2. **Build Errors**: Ensure C++17 compiler and libpqxx are properly installed
 3. **Runtime Errors**: Check connection string format and database accessibility
+4. **Table Creation Errors**: Verify database permissions and schema syntax
+5. **Query Execution Errors**: Check SQL syntax and table existence
 
 ### Debug Information
 
@@ -263,6 +413,8 @@ The pool provides debugging information during initialization and operation:
 - Connection pool size on startup
 - Active connection counts
 - Total connection counts
+- Table creation/drop confirmations
+- Query result row counts
 
 ## 📞 Support
 
