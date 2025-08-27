@@ -25,6 +25,7 @@ set(SOURCES
     src/TableCreator.cpp
     src/QueryExecutor.cpp
     src/DataModifier.cpp
+    src/DatabaseManager.cpp
 )
 
 add_executable(${PROJECT_NAME} ${SOURCES})

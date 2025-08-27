@@ -1,8 +1,5 @@
 // Copyright (c) 2025 Tanner Davison. All Rights Reserved.
-#include "ConnectionPool.hpp"
-#include "DataModifier.hpp"
-#include "QueryExecutor.hpp"
-#include "TableCreator.hpp"
+#include "DatabaseManager.hpp"
 #include <iostream>
 #include <string>
 #include <thread>
@@ -21,39 +18,36 @@
  *       and can handle concurrent access in multi-threaded applications.
  */
 int main() {
+   std::cout << "Enter Password: ";
+   std::string password;
+   std::getline(std::cin, password);
+
+   if (password.empty()) {
+      std::cerr << "Password cannot be empty" << std::endl;
+      return 1;
+   }
+
    try {
-      const std::string connection_string = "host=localhost port=5432 dbname=tanner user=tanner";
+      DatabaseManager db(password);
+      db.tables().createTable("users",
+                              "id SERIAL PRIMARY KEY, "
+                              "username VARCHAR(50) NOT NULL, "
+                              "email VARCHAR(100), "
+                              "created_at TIMESTAMP DEFAULT NOW()");
 
-      auto pool = std::make_shared<ConnectionPool>(connection_string, 2, 10);
+      int user_id = db.data().insert("users", {"username", "email"}, {"john_doe", "john@example.com"});
+      std::cout << "Inserted user with ID: " << user_id << std::endl;
 
-      TableCreator tableCreator(pool);
+      auto result = db.query().select("Select * FROM users");
 
-      std::string schema =
-          "id SERIAL PRIMARY KEY, "
-          "name VARCHAR(100) NOT NULL, "
-          "email VARCHAR(255) UNIQUE, "
-          "age NUMERIC(2), "
-          "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP";
-
-      tableCreator.dropTable("users");
-      tableCreator.createTable("users", schema);
-
-      {
-         const std::vector<std::string> user_columns = {"name", "email", "age"};
-
-         const std::vector<std::string> user_values_1{"Tanner Davison", "tboydavison@gmail.com", "30"};
-         const std::vector<std::string> user_values{"John", "john-doe@gmail.com", "49"};
-
-         DataModifier updateUsers(pool);
-
-         updateUsers.insert("users", user_columns, user_values_1);
-         updateUsers.insert("users", user_columns, user_values);
+      for (const auto& row : result) {
+         std::cout << "User: " << row["username"].as<std::string>() << " - " << row["email"].as<std::string>()
+                   << std::endl;
       }
+      db.printPoolStats();
 
    } catch (const std::exception& e) {
-      std::cout << "Error: " << e.what() << std::endl;
+      std::cerr << "Fatal error: " << e.what() << std::endl;
    }
-   unsigned int n = std::thread::hardware_concurrency();
-   std::cout << "This system can run " << n << " threads in parallel\n";
    return 0;
 }
