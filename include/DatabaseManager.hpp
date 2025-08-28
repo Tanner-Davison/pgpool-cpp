@@ -17,8 +17,10 @@ class DatabaseManager {
                    const std::string& user            = "tanner",
                    size_t             min_connections = 2,
                    size_t             max_connections = 10);
-   void testConnection();
+   void   testConnection();
+   size_t getActiveConnections() const;
 
+   size_t         getTotalConnections() const;
    TableCreator&  tables();
    QueryExecutor& query();
    DataModifier&  data();
