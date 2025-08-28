@@ -47,6 +47,16 @@ void MainWindow::setupUI() {
         border-radius: 10px;
     }
    )");
+#ifdef __linux__
+   setMinimumSize(1900, 1900);
+
+#endif
+#ifdef _WIN32
+   setMinimumSize(1400, 1400);
+#endif
+#ifdef _WIN32
+   setMinimumSize(1900, 1900);
+#endif
    setCentralWidget(centralWidget);
    auto* mainLayout = new QVBoxLayout(centralWidget);
    // Connection Group
