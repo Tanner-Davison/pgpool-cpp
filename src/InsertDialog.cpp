@@ -226,7 +226,7 @@ void InsertDialog::onInsertData() {
                values.push_back(value.toLower().toStdString());
             } else {
                // String/text types - add quotes
-               values.push_back("'" + value.toStdString() + "'");
+               values.push_back(value.toStdString());
             }
          }
 
