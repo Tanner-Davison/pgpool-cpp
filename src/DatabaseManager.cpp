@@ -30,6 +30,13 @@ void DatabaseManager::testConnection() {
    }
 }
 
+size_t DatabaseManager::getActiveConnections() const {
+   return pool->activeConnections();
+}
+
+size_t DatabaseManager::getTotalConnections() const {
+   return pool->totalConnections();
+}
 TableCreator& DatabaseManager::tables() {
    return *table_ops;
 }

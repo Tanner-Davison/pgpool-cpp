@@ -51,6 +51,7 @@ class MainWindow : public QMainWindow {
    QPushButton* m_refreshBtn;
    QPushButton* m_testPoolBtn;
    QPushButton* m_insertBtn;
+   QPushButton* m_toggleQueryBtn;
 
    QComboBox*    m_tableCombo;
    QTextEdit*    m_queryEdit;
@@ -60,7 +61,9 @@ class MainWindow : public QMainWindow {
 
    // Database components
    std::unique_ptr<DatabaseManager> m_dbManager;
-   bool                             m_isConnected;
+
+   bool m_isConnected;
+   bool m_queryGroupExpanded = true;
 };
 
 #endif // MAINWINDOW_HPP
