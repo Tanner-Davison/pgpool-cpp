@@ -48,9 +48,10 @@ void MainWindow::setupUI() {
     }
    )");
 #ifdef __linux__
-   setMinimumSize(1900, 1900);
+   setMinimumSize(1400, 1280);
 
 #endif
+
 #ifdef _WIN32
    setMinimumSize(1400, 1400);
 #endif
@@ -363,6 +364,7 @@ void MainWindow::onConnectDatabase() {
 
       // Build connection parameters
       std::string host     = m_hostEdit->text().toStdString();
+      int         port     = m_portEdit->text().toInt();
       std::string dbname   = m_dbNameEdit->text().toStdString();
       std::string user     = m_userEdit->text().toStdString();
       std::string password = m_passwordEdit->text().toStdString();
@@ -370,6 +372,7 @@ void MainWindow::onConnectDatabase() {
       // Initialize database manager with connection parameters
       m_dbManager = std::make_unique<DatabaseManager>(password,                      // password
                                                       host,                          // host
+                                                      port,                          // port
                                                       dbname,                        // dbname
                                                       user,                          // user
                                                       m_poolSizeSpinBox->value(),    // min_connections

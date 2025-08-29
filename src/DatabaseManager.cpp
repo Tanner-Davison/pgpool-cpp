@@ -4,12 +4,13 @@
 
 DatabaseManager::DatabaseManager(const std::string& password,
                                  const std::string& host,
+                                 int                m_port,
                                  const std::string& dbname,
                                  const std::string& user,
                                  size_t             min_connections,
                                  size_t             max_connections) {
-   std::string conn_string =
-       "host=" + host + " port=5432" + " dbname=" + dbname + " user=" + user + " password=" + password;
+   std::string conn_string = "host=" + host + " port=" + std::to_string(m_port) + " dbname=" + dbname +
+                             " user=" + user + " password=" + password;
 
    pool = std::make_shared<ConnectionPool>(conn_string, min_connections, max_connections);
 

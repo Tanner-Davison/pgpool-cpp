@@ -13,6 +13,7 @@ class DatabaseManager {
  public:
    DatabaseManager(const std::string& password,
                    const std::string& host            = "localhost",
+                   int                port            = 5432,
                    const std::string& dbname          = "tanner",
                    const std::string& user            = "tanner",
                    size_t             min_connections = 2,
