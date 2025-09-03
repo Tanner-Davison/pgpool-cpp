@@ -15,7 +15,6 @@ int main(int argc, char* argv[]) {
    QFont font = app.font();
    font.setPointSize(12);
    app.setFont(font);
-
    app.setStyle(QStyleFactory::create("Fusion"));
 
    QPalette darkPalette;
