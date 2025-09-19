@@ -3,7 +3,8 @@
 #include <QPalette>
 #include <QStyleFactory>
 #include <iostream>
-
+// testing page
+//
 int main(int argc, char* argv[]) {
    QApplication::setHighDpiScaleFactorRoundingPolicy(Qt::HighDpiScaleFactorRoundingPolicy::PassThrough);
    QApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
@@ -18,6 +19,7 @@ int main(int argc, char* argv[]) {
    app.setStyle(QStyleFactory::create("Fusion"));
 
    QPalette darkPalette;
+
    darkPalette.setColor(QPalette::Window, QColor(53, 53, 53));
    darkPalette.setColor(QPalette::WindowText, Qt::white);
    darkPalette.setColor(QPalette::Base, QColor(25, 25, 25));
