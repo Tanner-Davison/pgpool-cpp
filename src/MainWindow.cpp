@@ -1,6 +1,7 @@
 #include "MainWindow.hpp"
 #include "InsertDialog.hpp"
 #include <QAction>
+#include <QDate>
 #include <QGridLayout>
 #include <QGroupBox>
 #include <QHBoxLayout>
@@ -303,8 +304,10 @@ void MainWindow::setupUI() {
    resultsLogSplitter->setSizes({250, 150}); // Results gets 250px, log gets 150px
 
    // Status Bar
-   m_statusLabel = new QLabel("Disconnected", this);
+   m_current_date = new QLabel(QDate::currentDate().toString("yyyy-MM-dd"), this);
+   m_statusLabel  = new QLabel("Disconnected", this);
    statusBar()->addPermanentWidget(m_statusLabel);
+   statusBar()->showMessage(QDate::currentDate().toString("yyyy-MM-dd"));
 
    // Connect signals
    connect(m_connectBtn, &QPushButton::clicked, this, &MainWindow::onConnectDatabase);

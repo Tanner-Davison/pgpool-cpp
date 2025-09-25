@@ -58,6 +58,7 @@ class MainWindow : public QMainWindow {
    QTableWidget* m_resultsTable;
    QTextEdit*    m_logOutput;
    QLabel*       m_statusLabel;
+   QLabel*       m_current_date;
 
    // Database components
    std::unique_ptr<DatabaseManager> m_dbManager;
