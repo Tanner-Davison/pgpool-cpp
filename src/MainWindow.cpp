@@ -307,7 +307,7 @@ void MainWindow::setupUI() {
    m_current_date = new QLabel(QDate::currentDate().toString("yyyy-MM-dd"), this);
    m_statusLabel  = new QLabel("Disconnected", this);
    statusBar()->addPermanentWidget(m_statusLabel);
-   statusBar()->showMessage(QDate::currentDate().toString("yyyy-MM-dd"));
+   statusBar()->showMessage(QDate::currentDate().toString("yyyy-MM-dd"), {});
 
    // Connect signals
    connect(m_connectBtn, &QPushButton::clicked, this, &MainWindow::onConnectDatabase);

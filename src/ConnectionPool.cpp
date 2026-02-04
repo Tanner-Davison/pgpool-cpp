@@ -1,9 +1,12 @@
+
+// Copyright (c) 2026 Tanner Davison. All Rights Reserved.
 #include "ConnectionPool.hpp"
 #include <chrono>
 #include <iostream>
-
 ConnectionPool::ConnectionPool(const std::string& conn_str, size_t min_conns, size_t max_conns)
-    : connection_string(conn_str), min_connections(min_conns), max_connections(max_conns) {
+    : connection_string(conn_str)
+    , min_connections(min_conns)
+    , max_connections(max_conns) {
    for (size_t i = 0; i < min_conns; ++i) {
       createConnection();
    }
@@ -19,11 +22,15 @@ void ConnectionPool::createConnection() {
 
 // ConnectionHandle consturctor
 ConnectionPool::ConnectionHandle::ConnectionHandle(pqxx::connection* c, ConnectionPool* p, size_t idx)
-    : conn(c), pool(p), index(idx) {}
+    : conn(c)
+    , pool(p)
+    , index(idx) {}
 
 // ConnectionHandle  move constructor
 ConnectionPool::ConnectionHandle::ConnectionHandle(ConnectionHandle&& other) noexcept
-    : conn(other.conn), pool(other.pool), index(other.index) {
+    : conn(other.conn)
+    , pool(other.pool)
+    , index(other.index) {
    other.conn = nullptr;
    other.pool = nullptr;
 };
